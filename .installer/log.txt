@@ -1,0 +1,4 @@
+full_name=Ada
+short_name=Ada
+repo=pratyushchanda/ada
+installed_at=2026-06-03T06:37:54.122Z

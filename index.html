@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ada</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="recaptcha-sitekey" content="6LcxfwktAAAAAFr3FmBO5LHM3m_j33369aSsOsOf" />
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon" href="favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- markdown-it (replaces marked) -->
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it@14/dist/markdown-it.min.js"></script>
+  <!-- markdown-it optional plugins -->
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it-sub@1/dist/markdown-it-sub.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it-sup@1/dist/markdown-it-sup.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it-footnote@3/dist/markdown-it-footnote.min.js"></script>
+  <!-- MathJax 3 — LaTeX math rendering ($inline$ and $$block$$) -->
+  <script>
+  MathJax = {
+    tex: {
+      inlineMath: [['\\(', '\\)']],
+      displayMath: [['\\[', '\\]']],
+      packages: {'[+]': ['ams', 'boldsymbol']}
+    },
+    svg: { fontCache: 'global' },
+    startup: { typeset: false },
+    options: {
+      ignoreHtmlClass: 'tikz-source'  /* never process .tikz-source divs */
+    }
+  };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <!-- TikZJax — TikZ/PGF diagram rendering (```tikz blocks) -->
+  <!-- Engine lives in bin/tikzjax/output/; fonts in bin/tikzjax/css/ -->
+  <link rel="stylesheet" href="bin/tikzjax/css/fonts.css">
+  <script src="bin/tikzjax/output/tikzjax.js"></script>
+  <!-- highlight.js — syntax highlighting for code blocks -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css"
+        media="(prefers-color-scheme: light)">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css"
+        media="(prefers-color-scheme: dark)">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
+  <!-- Mermaid — diagram / flowchart rendering (```mermaid blocks) -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <!-- Desmos Graphing Calculator API -->
+  <script src="/api/desmos.js"></script>
+  <!-- Obsidian-syntax compatibility layer (replaces obsidian-md.js) -->
+  <script src="bin/obsidian-markdown-it.js"></script>
+  <!-- Google reCAPTCHA v3 -->
+  <script src="https://www.google.com/recaptcha/api.js?render=6LcxfwktAAAAAFr3FmBO5LHM3m_j33369aSsOsOf" async defer></script>
+  <!-- Modern Email + Password Auth System -->
+  <script src="bin/modern-auth.js"></script>
+  <link rel="stylesheet" href="bin/style.css">
+  <script src="bin/md-init.js"></script>
+</head>
+<body>
+  <div id="splash"><img src="favicon.png" alt="Loading..." /></div>
+
+  <!-- ===== FIRST-TIME GUIDANCE ===== -->
+  <div id="guidanceOverlay" class="full-overlay">
+    <div class="overlay-card">
+      <div class="overlay-icon-lg">👋</div>
+      <div class="overlay-heading">Welcome to Ada</div>
+      <div class="overlay-subtext">A quick guide to get you started</div>
+      <div class="guide-tabs">
+        <button class="guide-tab" id="guideTabDesktop" onclick="switchGuideTab('desktop')">🖥️ Desktop</button>
+        <button class="guide-tab" id="guideTabMobile" onclick="switchGuideTab('mobile')">📱 Mobile</button>
+      </div>
+      <div id="guideDesktop">
+        <div class="guide-step"><div class="guide-step-icon">👆</div><div class="guide-step-text"><strong>Click to open files</strong><span>Single-click any file to preview it in a floating window</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon">🖱️</div><div class="guide-step-text"><strong>Right-click for options</strong><span>Right-click any file for Preview or Download options</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon">⠿</div><div class="guide-step-text"><strong>Drag windows freely</strong><span>Hold and drag the title bar to reposition any window</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon">🗕</div><div class="guide-step-text"><strong>Minimise to taskbar</strong><span>Click 🗕 to minimise — windows appear in the scrollable bottom bar</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon">📂</div><div class="guide-step-text"><strong>Navigate folders</strong><span>Click a folder to open it, use ↑ or the breadcrumb to go back</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon">📤</div><div class="guide-step-text"><strong>Upload files</strong><span>Click 📤 in the toolbar to upload a file for admin review</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon">🔑</div><div class="guide-step-text"><strong>Admin access</strong><span>Click 🔑 Login in the toolbar to enter your access code</span></div></div>
+      </div>
+      <div id="guideMobile" style="display:none">
+        <div class="guide-step"><div class="guide-step-icon">👆</div><div class="guide-step-text"><strong>Tap to open files</strong><span>Tap any file to open a full-screen preview</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon">🗕</div><div class="guide-step-text"><strong>Minimise to corner button</strong><span>Tap 🗕 to minimise — a floating button appears at the bottom-right</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon">🔄</div><div class="guide-step-text"><strong>Switch between open files</strong><span>Tap a minimised button to restore it; any open file auto-minimises</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon">📂</div><div class="guide-step-text"><strong>Navigate folders</strong><span>Tap a folder to open, use ↑ or the breadcrumb to go back</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon">📤</div><div class="guide-step-text"><strong>Upload files</strong><span>Tap 📤 in the toolbar to submit a file for review</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon">🔑</div><div class="guide-step-text"><strong>Admin access</strong><span>Tap 🔑 Login to enter your admin access code</span></div></div>
+      </div>
+      <button class="overlay-btn-primary" onclick="dismissGuidance()" style="margin-top:20px">Got it — let's go! 🚀</button>
+    </div>
+  </div>
+
+  <!-- ===== MODERN EMAIL + PASSWORD LOGIN SCREEN ===== -->
+  <div id="loginOverlay" class="full-overlay">
+    <div class="overlay-card">
+      <button class="overlay-close" onclick="hideLoginScreen()">×</button>
+      
+      <!-- Tab selector -->
+      <div id="authTabs" class="guide-tabs" style="margin-bottom:20px">
+        <button class="guide-tab active" onclick="switchAuthTab('login')">Login</button>
+        <button class="guide-tab" onclick="switchAuthTab('register')">Register</button>
+      </div>
+      
+      <!-- Login View -->
+      <div id="loginView">
+        <div class="overlay-icon-lg" style="font-size:42px">🔐</div>
+        <div class="overlay-heading">Welcome Back</div>
+        <div class="overlay-subtext">Sign in to your account</div>
+        
+        <div style="margin: 20px 0">
+          <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block">Email</label>
+          <input type="email" id="loginEmail" class="text-input" placeholder="your@email.com" style="margin:0">
+        </div>
+        
+        <div style="margin: 20px 0">
+          <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block">Password</label>
+          <input type="password" id="loginPassword" class="text-input" placeholder="••••••••" style="margin:0">
+        </div>
+        
+        <div id="loginMsg" class="login-msg"></div>
+        
+        <button class="overlay-btn-primary" onclick="attemptModernLogin()" style="margin-top:16px">Sign In</button>
+        
+        <div style="text-align:center;margin-top:16px">
+          <button class="overlay-btn-ghost" onclick="switchAuthTab('forgot')" style="font-size:13px">Forgot password?</button>
+        </div>
+      </div>
+      
+      <!-- Register View -->
+      <div id="registerView" style="display:none">
+        <div class="overlay-icon-lg" style="font-size:42px">📝</div>
+        <div class="overlay-heading">Create Account</div>
+        <div class="overlay-subtext">Join NoteBooks today</div>
+        
+        <div style="margin: 20px 0">
+          <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block">Email</label>
+          <input type="email" id="registerEmail" class="text-input" placeholder="your@email.com" style="margin:0">
+        </div>
+        
+        <div style="margin: 20px 0">
+          <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block">Password</label>
+          <input type="password" id="registerPassword" class="text-input" placeholder="••••••••" style="margin:0">
+          <div style="font-size:12px;opacity:0.6;margin-top:4px">Minimum 8 characters</div>
+        </div>
+        
+        <div style="margin: 20px 0">
+          <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block">Confirm Password</label>
+          <input type="password" id="registerConfirmPassword" class="text-input" placeholder="••••••••" style="margin:0">
+        </div>
+        
+        <div id="registerMsg" class="login-msg"></div>
+        
+        <button class="overlay-btn-primary" onclick="attemptModernRegister()" style="margin-top:16px">Create Account</button>
+      </div>
+      
+      <!-- Forgot Password View -->
+      <div id="forgotView" style="display:none">
+        <div class="overlay-icon-lg" style="font-size:42px">🔑</div>
+        <div class="overlay-heading">Reset Password</div>
+        <div class="overlay-subtext">Enter your email to receive a reset link</div>
+        
+        <div style="margin: 20px 0">
+          <label style="font-size:13px;font-weight:500;margin-bottom:6px;display:block">Email</label>
+          <input type="email" id="forgotEmail" class="text-input" placeholder="your@email.com" style="margin:0">
+        </div>
+        
+        <div id="forgotMsg" class="login-msg"></div>
+        
+        <button class="overlay-btn-primary" onclick="attemptModernForgotPassword()" style="margin-top:16px">Send Reset Link</button>
+        
+        <div style="text-align:center;margin-top:16px">
+          <button class="overlay-btn-ghost" onclick="switchAuthTab('login')" style="font-size:13px">Back to Login</button>
+        </div>
+      </div>
+      
+      <!-- Logged In View -->
+      <div id="loggedInView" style="display:none">
+        <div class="overlay-icon-lg" style="font-size:42px">✅</div>
+        <div class="overlay-heading">Welcome!</div>
+        <div class="overlay-subtext" id="loggedInEmail"></div>
+        <div style="background:var(--bg);border-radius:10px;padding:14px;margin:16px 0;font-size:13px">
+          <div style="display:flex;justify-content:space-between">
+            <span style="opacity:0.6">Status:</span>
+            <span id="loggedInStatus" style="font-weight:600;color:var(--accent)">Authenticated</span>
+          </div>
+        </div>
+        <button class="overlay-btn-ghost" onclick="attemptModernLogout()" style="margin-top:16px">Log Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN PANEL ===== -->
+  <div id="adminOverlay" class="full-overlay">
+    <div class="overlay-card overlay-card--wide">
+      <button class="overlay-close" onclick="hideAdminPanel()">×</button>
+      <div class="overlay-heading">Admin Panel</div>
+      
+      <!-- SSH Terminal Access -->
+      <div class="admin-section">
+        <h3>&#x1F4BB; SSH Terminal</h3>
+        <div style="font-size:13px;opacity:.65;line-height:1.6;margin-bottom:12px">
+          Access the SSH-style terminal for advanced administration. Manage users, view logs, and rotate keys.
+        </div>
+        <button class="overlay-btn-primary" style="width:auto;padding:10px 20px" onclick="hideAdminPanel(); showAdminTerminal()">Open Terminal</button>
+      </div>
+      
+      <!-- SSH Users Management -->
+      <div class="admin-section">
+        <h3>&#x1F465; SSH Users</h3>
+        <div id="sshUsersList"><div style="font-size:13px;opacity:.5;padding:6px 0">No SSH users registered.</div></div>
+      </div>
+      
+      <!-- Super admin: manage codes -->
+      <div id="superAdminSection" class="admin-section" style="display:none">
+        <h3>🔑 Admin Codes</h3>
+        <div id="adminCodesList"><div style="font-size:13px;opacity:.5;padding:6px 0">No admin codes yet.</div></div>
+        <button class="overlay-btn-secondary" style="width:auto;padding:8px 16px;margin-top:8px" onclick="toggleCreateAdminForm()">+ Create New Admin</button>
+        <div id="createAdminForm" style="display:none;margin-top:14px;padding:16px;background:var(--bg);border-radius:13px">
+          <div style="font-size:14px;font-weight:600;margin-bottom:10px">New Admin Code</div>
+          <input id="newAdminCodeInput" class="text-input mono-input" maxlength="6" placeholder="Leave blank to auto-generate">
+          <div style="font-size:13px;font-weight:500;margin:10px 0 4px">Permissions</div>
+          <div class="perm-checks">
+            <label class="perm-check"><input type="checkbox" id="pc-create" checked> Create</label>
+            <label class="perm-check"><input type="checkbox" id="pc-delete"> Delete</label>
+            <label class="perm-check"><input type="checkbox" id="pc-modify"> Modify</label>
+            <label class="perm-check"><input type="checkbox" id="pc-approve" checked> Approve</label>
+          </div>
+          <button class="overlay-btn-primary" onclick="createNewAdmin()" style="margin-top:10px">Create Code</button>
+          <div id="createAdminMsg" style="font-size:13px;text-align:center;margin-top:8px;min-height:16px"></div>
+        </div>
+      </div>
+      <!-- Pending uploads -->
+      <div class="admin-section">
+        <h3>📥 Pending Uploads <span id="pendingCountLabel" style="font-size:12px;font-weight:400;opacity:.55"></span></h3>
+        <div id="pendingUploadsList"><div style="font-size:13px;opacity:.5;padding:6px 0">No pending uploads.</div></div>
+      </div>
+      <!-- GitHub Integration info -->
+      <div class="admin-section">
+        <h3>⚙️ GitHub Integration</h3>
+        <div style="font-size:13px;opacity:.65;line-height:1.6">
+          All GitHub operations (approving uploads, revoking admin codes, deleting files) are handled server-side via the Vercel proxy <code>/api/gh</code>. The PAT is stored exclusively as a Vercel environment variable (<code>GITHUB_PAT</code>) and is never sent to the browser.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== UPLOAD SCREEN ===== -->
+  <div id="uploadOverlay" class="full-overlay">
+    <div class="overlay-card">
+      <button class="overlay-close" onclick="closeUploadScreen()">×</button>
+      <div class="upload-dots">
+        <div class="upload-dot on" id="ud0"></div>
+        <div class="upload-dot" id="ud1"></div>
+        <div class="upload-dot" id="ud2"></div>
+      </div>
+      <!-- Step 1: pick file -->
+      <div id="us1">
+        <div class="overlay-heading">Upload Files</div>
+        <div class="overlay-subtext">Choose one or more files to upload</div>
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('filePickerInput').click()" ondragover="uploadDragOver(event)" ondragleave="uploadDragLeave(event)" ondrop="uploadFileDrop(event)">
+          <div class="dz-icon">📤</div>
+          <p>Drop files here or tap to browse</p>
+          <button class="overlay-btn-secondary" style="width:auto;padding:8px 20px" onclick="event.stopPropagation();document.getElementById('filePickerInput').click()">Browse Files</button>
+        </div>
+        <input type="file" id="filePickerInput" style="display:none" multiple onchange="onFilePicked(event)">
+      </div>
+      <!-- Step 2: review / pending info -->
+      <div id="us2" style="display:none">
+        <div class="overlay-heading" id="us2title">Files Selected</div>
+        <div class="overlay-subtext" id="us2sub">Review before submitting</div>
+        <!-- File queue list -->
+        <div id="us2fileQueue" style="max-height:190px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin:10px 0"></div>
+        <div id="us2pendingNotice" class="pending-notice">⏳ <span>Files will be held for admin review and approval before being published.</span></div>
+        <div id="us2adminNotice" class="admin-notice" style="display:none">✓ As an admin, your files will be published directly to the repository.</div>
+        <!-- Destination folder (all users) -->
+        <div id="us2destSection" style="margin-top:12px">
+          <div style="font-size:13px;font-weight:500;margin-bottom:5px">📁 Destination folder</div>
+          <input type="text" id="us2destPath" class="text-input" placeholder="e.g. books/sci-fi (leave blank for root)">
+          <div style="font-size:11px;opacity:.5;margin-top:3px">Where in the repository should these files be placed? New folders/subfolders will be created if needed.</div>
+        </div>
+        <!-- Admin: optional re-upload of modified version (single file only) -->
+        <div id="us2reuploadSection" style="display:none;margin-top:10px">
+          <div style="font-size:13px;font-weight:500;margin-bottom:6px">Replace with modified version (optional)</div>
+          <button class="overlay-btn-secondary" style="width:auto;padding:8px 16px" onclick="document.getElementById('reuploadPicker').click()">📎 Choose modified file</button>
+          <input type="file" id="reuploadPicker" style="display:none" onchange="onReuploadPicked(event)">
+          <div id="reuploadInfo" style="font-size:12px;opacity:.6;margin-top:6px"></div>
+        </div>
+        <button class="overlay-btn-primary" onclick="uploadGoStep3()" style="margin-top:14px">Continue →</button>
+        <button class="overlay-btn-ghost" onclick="uploadGoStep1()">← Back</button>
+      </div>
+      <!-- Step 3: final confirmation -->
+      <div id="us3" style="display:none">
+        <div class="overlay-heading">Confirm Upload</div>
+        <div class="overlay-subtext" id="us3sub">Please confirm to submit</div>
+        <div class="fpc" id="us3card">
+          <div class="fpc-icon" id="us3icon">📄</div>
+          <div><div class="fpc-name" id="us3name"></div><div class="fpc-size" id="us3size"></div></div>
+        </div>
+        <div style="font-size:12px;opacity:.6;margin:2px 0 8px;text-align:center">📁 Destination: <span id="us3destPath">repository root</span></div>
+        <div id="us3adminNote" class="admin-notice" style="display:none">✓ These files will be committed directly to the repository.</div>
+        <div id="us3progressWrap" style="display:none;margin:10px 0">
+          <div style="font-size:13px;text-align:center;margin-bottom:6px" id="us3progressLabel">Uploading…</div>
+          <div style="background:var(--border);border-radius:99px;height:6px;overflow:hidden">
+            <div id="us3progressBar" style="height:100%;background:var(--accent);width:0%;transition:width 0.3s ease;border-radius:99px"></div>
+          </div>
+        </div>
+        <button class="overlay-btn-primary" id="us3approveBtn" onclick="finalizeUpload()">✓ Approve Upload</button>
+        <button class="overlay-btn-ghost" id="us3backBtn" onclick="uploadGoStep2()">← Back</button>
+      </div>
+      <!-- Result -->
+      <div id="usResult" style="display:none;text-align:center;padding:10px 0">
+        <div style="font-size:48px;margin-bottom:14px" id="usResultIcon">✅</div>
+        <div class="overlay-heading" id="usResultTitle">Done!</div>
+        <div class="overlay-subtext" id="usResultMsg">Your file has been submitted for review.</div>
+        <button class="overlay-btn-primary" onclick="hideUploadScreen()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Discard confirmation -->
+  <div id="discardConfirm" class="confirm-overlay" style="display:none">
+    <div class="confirm-card">
+      <h3>Discard upload?</h3>
+      <p>Your selected file will be removed and not submitted.</p>
+      <button class="overlay-btn-primary" style="background:#e53935" onclick="confirmDiscard()">Discard and Close</button>
+      <button class="overlay-btn-ghost" onclick="document.getElementById('discardConfirm').style.display='none'">Keep editing</button>
+    </div>
+  </div>
+
+  <!-- Desktop: delete file confirmation -->
+  <div id="deleteConfirm" class="confirm-overlay" style="display:none">
+    <div class="confirm-card">
+      <div style="font-size:36px;margin-bottom:10px">🗑️</div>
+      <h3>Delete file?</h3>
+      <p id="deleteConfirmMsg">This will permanently remove the file from the repository. This cannot be undone.</p>
+      <button class="overlay-btn-primary" style="background:#e53935;margin-bottom:4px" onclick="confirmDeleteFile()">Delete permanently</button>
+      <button class="overlay-btn-ghost" onclick="cancelDeleteFile()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Mobile: delete file immersive overlay -->
+  <div id="deleteMobileOverlay" class="full-overlay">
+    <div class="overlay-card">
+      <button class="overlay-close" onclick="cancelDeleteFile()">×</button>
+      <div class="overlay-icon-lg">🗑️</div>
+      <div class="overlay-heading">Delete file?</div>
+      <div class="overlay-subtext" id="deleteMobileMsg">This will permanently remove the file from the repository.</div>
+      <div style="background:rgba(229,57,53,0.07);border:1px solid rgba(229,57,53,0.25);border-radius:10px;padding:11px 14px;font-size:13px;margin:12px 0;color:#c62828">
+        ⚠ This action cannot be undone.
+      </div>
+      <button class="overlay-btn-primary" style="background:#e53935" onclick="confirmDeleteFile()">Delete permanently</button>
+      <button class="overlay-btn-ghost" onclick="cancelDeleteFile()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Mobile file action bottom sheet -->
+  <div id="mobFileSheet" onclick="closeMobFileSheet(event)">
+    <div id="mobFileSheetCard">
+      <div id="mobFileSheetHandle"></div>
+      <div id="mobFileSheetTitle"></div>
+      <button class="mob-sheet-btn" id="mobSheetPreview" onclick="mobSheetAction('preview')">
+        <span class="msb-icon">👁️</span> Preview
+      </button>
+      <button class="mob-sheet-btn" id="mobSheetDownload" onclick="mobSheetAction('download')">
+        <span class="msb-icon">📥</span> Download
+      </button>
+      <div class="mob-sheet-sep"></div>
+      <button class="mob-sheet-btn danger" id="mobSheetDelete" style="display:none" onclick="mobSheetAction('delete')">
+        <span class="msb-icon">🗑️</span> Delete
+      </button>
+      <button class="mob-sheet-btn" onclick="closeMobFileSheet()">
+        <span class="msb-icon" style="opacity:.4">✕</span> Cancel
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile floating minimize stack -->
+  <div id="mobileMinStack">
+    <div id="mobHamburgerDropdown"></div>
+    <button id="mobHamburgerBtn" onclick="toggleMobHamburger()" title="Minimised windows">☰</button>
+  </div>
+  <div id="vercelPopup">
+    <div id="vercelPopupCard">
+      <div id="vercelPopupIcon">⚡</div>
+      <h2>A better experience awaits</h2>
+      <p>You're on GitHub Pages. The Vercel version loads faster, is more reliable, and always stays up to date.</p>
+      <div id="vercelPopupButtons">
+        <button id="vercelPopupGo" onclick="goToVercel()">Let's Go →</button>
+        <button id="vercelPopupLater" onclick="dismissVercelPopup()">Later</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="window">
+    <div class="toolbar">
+      <h1>Ada</h1>
+      <!-- Secondary buttons hidden on mobile into overflow menu -->
+      <button class="mob-toolbar-overflow" onclick="refreshFiles()" title="Refresh">↻</button>
+      <button class="mob-toolbar-overflow" onclick="goUp()" title="Go up">↑</button>
+      <button class="mob-toolbar-overflow" id="uploadBtnToolbar" onclick="showUploadScreen()" title="Upload file" style="font-size:15px">📤</button>
+      <button class="mob-toolbar-overflow" id="adminPanelBtn" onclick="showAdminPanel()" title="Admin panel" style="display:none; font-size:15px">⚙️</button>
+      <button class="mob-toolbar-overflow" id="communityBtnToolbar" onclick="openCommunity()" title="Community" style="font-size:15px">💬</button>
+      <!-- Always visible on both desktop and mobile -->
+      <button id="loginBtnToolbar" onclick="showLoginScreen()" title="Login / Account">🔑 Login</button>
+      <!-- Mobile-only overflow toggle -->
+      <button id="mobOverflowBtn" onclick="toggleMobOverflow()" title="More options">⋯</button>
+    </div>
+    <!-- Mobile overflow dropdown -->
+    <div id="mobOverflowMenu">
+      <button class="mob-overflow-item" onclick="refreshFiles();closeMobOverflow()">
+        <span class="moi-icon">↻</span> Refresh
+      </button>
+      <button class="mob-overflow-item" onclick="goUp();closeMobOverflow()">
+        <span class="moi-icon">↑</span> Go Up
+      </button>
+      <button class="mob-overflow-item" onclick="showUploadScreen();closeMobOverflow()">
+        <span class="moi-icon">📤</span> Upload File
+      </button>
+      <div class="mob-overflow-sep"></div>
+      <button class="mob-overflow-item" onclick="openCommunity();closeMobOverflow()">
+        <span class="moi-icon">💬</span> Community
+      </button>
+      <button class="mob-overflow-item" id="mobOverflowAdminBtn" style="display:none" onclick="showAdminPanel();closeMobOverflow()">
+        <span class="moi-icon">⚙️</span> Admin Panel
+      </button>
+    </div>
+    <div class="path-nav" id="pathNav">
+      <span class="path-segment" onclick="goToRoot()">☁️</span>
+    </div>
+    <div class="list-view" id="listView"></div>
+  </div>
+
+  <div class="context-menu" id="contextMenu">
+    <button onclick="handlePreview()"><span class="icon">👁️</span>Preview</button>
+    <button onclick="handleDownload()"><span class="icon">📥</span>Download</button>
+  </div>
+
+  <div class="preview-container" id="previewContainer"></div>
+  <div id="taskbar" style="display: none;"></div>
+
+  <div class="mobile-preview" id="mobilePreview">
+    <div class="content">
+      <div class="header">
+        <div class="title" id="mobilePreviewTitle">Preview</div>
+        <div class="close" onclick="closeMobilePreview()">×</div>
+      </div>
+      <div class="body" id="mobilePreviewContent"></div>
+    </div>
+  </div>
+  
+  <div id="status"></div>
+
+  <!-- ===== ADMIN TERMINAL ===== -->
+  <div id="terminalOverlay" class="full-overlay" style="display:none">
+    <div class="overlay-card overlay-card--wide" style="max-width:900px;padding:0;background:#0f172a;border-color:#334155">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#1e293b;border-bottom:1px solid #334155">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="display:flex;gap:6px">
+            <span style="width:12px;height:12px;border-radius:50%;background:#ef4444"></span>
+            <span style="width:12px;height:12px;border-radius:50%;background:#f59e0b"></span>
+            <span style="width:12px;height:12px;border-radius:50%;background:#10b981"></span>
+          </div>
+          <span style="font-family:var(--font-mono);font-size:13px;color:#94a3b8">admin@NoteBooks-Science ~ ssh</span>
+        </div>
+        <button onclick="hideAdminTerminal()" style="background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer;padding:4px 8px;border-radius:4px;transition:all 0.15s" onmouseover="this.style.background='#334155'" onmouseout="this.style.background='none'">×</button>
+      </div>
+      <div id="adminTerminal" style="height:500px;display:flex;flex-direction:column;font-family:var(--font-mono);font-size:13px;color:#e2e8f0">
+        <div id="terminalOutput" style="flex:1;overflow-y:auto;padding:16px 20px;line-height:1.7"></div>
+        <div style="display:flex;align-items:center;padding:12px 20px;border-top:1px solid #334155;background:#0f172a">
+          <span style="color:#10b981;margin-right:8px">$</span>
+          <input type="text" id="terminalInput" autocomplete="off" spellcheck="false" style="flex:1;background:none;border:none;outline:none;color:#e2e8f0;font-family:var(--font-mono);font-size:13px" placeholder="Type a command...">
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.5/dist/docx-preview.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="bin/gh-proxy.js"></script>
+<script src="bin/app.js"></script>
+<script src="bin/markdown.js"></script>
+<div id="updateNotice" style="display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--item); color: var(--fg); padding: 12px 20px; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.2); z-index: 9999; align-items: center; gap: 12px;">
+  <span>Update detected. Refresh now to apply changes.</span>
+  <button onclick="location.reload()" style="background:var(--accent);color:white;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">Refresh</button>
+  <button onclick="dismissUpdateNotice()">×</button>
+	</div>
+<div id="taskbarContextMenu" class="context-menu" style="display: none;"></div>
+<script src="bin/admin-terminal.js"></script>
+<script src="bin/auth.js"></script>
+<script src="bin/upload.js"></script>
+<script src="bin/mobile.js"></script>
+</body>
