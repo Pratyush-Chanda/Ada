@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Setup NoteBooks-Science</title>
+  <title>Setup Ada</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -313,9 +313,9 @@ code{
     <header class="installer-header">
       <div class="logo">
         <div class="logo-mark">⚙</div>
-        <span class="logo-name">Setup NoteBooks-Science</span>
+        <span class="logo-name">Setup Ada</span>
       </div>
-      <div class="subtitle">Configures your new NoteBooks-Science installation</div>
+      <div class="subtitle">Configures your new Ada installation</div>
     </header>
 
     <nav class="progress-bar" aria-label="Progress">
@@ -357,8 +357,8 @@ code{
             <label for="pat-input">GitHub Personal Access Token</label>
             <input id="pat-input" type="password" placeholder="github_pat_…  or  ghp_…" autocomplete="off" />
             <div class="hint">
-              Needs <strong>Contents</strong> (read &amp; write) &amp; <strong>Actions</strong> (read) scope.<br>
-              <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">Create a token →</a>
+              Needs <strong>Contents</strong> (read &amp; write) &amp; <strong>Actions</strong> (read) scope on your repository.<br>
+              <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Create a fine-grained token →</a>
             </div>
           </div>
           <div id="welcome-err" class="err-msg"></div>
@@ -380,12 +380,12 @@ code{
         <div class="card-body">
           <div class="field">
             <label for="full-name">Full Name</label>
-            <input id="full-name" type="text" placeholder="e.g. Class XI Notes" maxlength="60" />
+            <input id="full-name" type="text" placeholder="e.g. My Knowledge Base" maxlength="60" />
             <div class="hint">Used in the browser tab, welcome screen, and the toolbar heading.</div>
           </div>
           <div class="field">
             <label for="short-name">Short Name</label>
-            <input id="short-name" type="text" placeholder="e.g. Notes XI" maxlength="12" />
+            <input id="short-name" type="text" placeholder="e.g. Ada" maxlength="12" />
             <div class="hint">Shown on the home screen icon when installed as a PWA. Max 12 chars.</div>
           </div>
           <div id="names-err" class="err-msg"></div>
@@ -402,8 +402,8 @@ code{
       <div class="card">
         <div class="card-header">
           <div class="step-label">Step 3 of 7</div>
-          <h2>Creating setup configurations.</h2>
-          <p>Configuring setup to continue. This won't take long...</p>
+          <h2>Applying your configuration</h2>
+          <p>Patching source files and pushing to GitHub. This usually takes under a minute…</p>
         </div>
         <div class="card-body">
           <div id="apply-log" class="log-panel"></div>
@@ -448,42 +448,64 @@ code{
             <div class="guide-step">
               <div class="guide-step-num">1</div>
               <div class="guide-step-body">
-                <strong>Create a Fine-Grained Personal Access Token</strong>
+                <strong>Create a Fine-Grained GitHub Token for Vercel</strong>
                 Go to <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Settings → Developer Settings → Fine-grained tokens → Generate new token</a>.
-                Set <strong>Expiration</strong> to <em>No expiration</em>. Under <em>Repository access</em> choose your repo, then grant:<br><br>
-                • <code>Contents</code> — Read &amp; Write<br>
-                • <code>Actions</code> — Read &amp; Write<br><br>
-                Copy the token — you will paste it as <code>GITHUB_PAT</code> in Vercel.
+                Set <strong>Expiration</strong> to <em>No expiration</em>. Under <em>Repository access</em>, select your repository, then grant:<br><br>
+                • <code>Contents</code> — Read &amp; Write<br><br>
+                Copy the token — you'll paste it as <code>GITHUB_PAT</code> in Vercel. You can reuse the same token from Step 1 if it already has the right scope.
               </div>
             </div>
             <div class="guide-step">
               <div class="guide-step-num">2</div>
               <div class="guide-step-body">
-                <strong>Create a free Vercel Hobby account</strong>
-                Sign up at <a href="https://vercel.com/signup" target="_blank" rel="noopener">vercel.com/signup</a> and connect your GitHub account.
+                <strong>Set up the required third-party services</strong>
+                You'll need API keys from the following services. All have free tiers that are more than enough.<br><br>
+                • <a href="https://upstash.com/" target="_blank" rel="noopener">Upstash</a> — Create <strong>two separate Redis databases</strong>: one for user auth (you'll use its URL and token as <code>KV_REST_API_URL</code> and <code>KV_REST_API_TOKEN</code>) and one for SSH auth (<code>DATABASE_KV_REST_API_URL</code> and <code>DATABASE_KV_REST_API_TOKEN</code>).<br><br>
+                • <a href="https://resend.com/" target="_blank" rel="noopener">Resend</a> — Create an account and generate an API key. Used to send password-reset emails.<br><br>
+                • <a href="https://www.google.com/recaptcha/admin/create" target="_blank" rel="noopener">Google reCAPTCHA v3</a> — Register a new site. Add your Vercel domain as an allowed domain (you can add <code>localhost</code> now and update after deploy). Copy the <strong>Secret Key</strong>.<br><br>
+                • <strong>JWT Secret</strong> — Generate a secure random string locally: <code>openssl rand -base64 32</code>
               </div>
             </div>
             <div class="guide-step">
               <div class="guide-step-num">3</div>
               <div class="guide-step-body">
-                <strong>Import your repository &amp; create a new project</strong>
-                On your Vercel dashboard click <em>Add New → Project</em>, then select your repository.<br><br>
-                <span class="pill-warn">�� The project name becomes your public URL: <code>project-name.vercel.app</code></span><br><br>
-                Before deploying, add these <strong>Environment Variables</strong>:
-                <table class="env-table">
-                  <thead><tr><th>Name</th><th>Value</th></tr></thead>
-                  <tbody>
-                    <tr><td>GITHUB_PAT</td><td>The Fine-Grained token from step 1</td></tr>
-                    <tr><td>WM_SATOKEN</td><td>The 6-char code you choose below — your super-admin login</td></tr>
-                  </tbody>
-                </table>
+                <strong>Create a free Vercel account and add Blob storage</strong>
+                Sign up at <a href="https://vercel.com/signup" target="_blank" rel="noopener">vercel.com/signup</a> and connect your GitHub account. Once logged in, go to <em>Storage</em> and create a <strong>Vercel Blob</strong> store — this will auto-populate <code>BLOB_READ_WRITE_TOKEN</code> in your project environment.
               </div>
             </div>
             <div class="guide-step">
               <div class="guide-step-num">4</div>
               <div class="guide-step-body">
+                <strong>Import your repository &amp; add environment variables</strong>
+                On your Vercel dashboard click <em>Add New → Project</em>, then select your repository.<br><br>
+                <span class="pill-warn">⚠ The project name becomes your public URL: <code>project-name.vercel.app</code></span><br><br>
+                Before deploying, add <strong>all</strong> of the following environment variables:
+                <table class="env-table">
+                  <thead><tr><th>Name</th><th>Value / Where to get it</th></tr></thead>
+                  <tbody>
+                    <tr><td>GITHUB_REPO</td><td>Your repo in <code>owner/reponame</code> format</td></tr>
+                    <tr><td>GITHUB_BRANCH</td><td>Your default branch, e.g. <code>main</code></td></tr>
+                    <tr><td>GITPAGE_URL</td><td>Your GitHub Pages URL, e.g. <code>https://yourname.github.io/reponame</code></td></tr>
+                    <tr><td>APP_URL</td><td>Your Vercel deployment URL — set after deploy, or leave blank for now</td></tr>
+                    <tr><td>GITHUB_PAT</td><td>Fine-grained token from step 1</td></tr>
+                    <tr><td>JWT_SECRET</td><td>Random secret from step 2</td></tr>
+                    <tr><td>RESEND_API_KEY</td><td>From your Resend dashboard</td></tr>
+                    <tr><td>RECAPTCHA_SECRET_KEY</td><td>Server-side secret from Google reCAPTCHA v3</td></tr>
+                    <tr><td>KV_REST_API_URL</td><td>REST URL of your first Upstash database (user auth)</td></tr>
+                    <tr><td>KV_REST_API_TOKEN</td><td>REST Token of your first Upstash database</td></tr>
+                    <tr><td>DATABASE_KV_REST_API_URL</td><td>REST URL of your second Upstash database (SSH auth)</td></tr>
+                    <tr><td>DATABASE_KV_REST_API_TOKEN</td><td>REST Token of your second Upstash database</td></tr>
+                    <tr><td>BLOB_READ_WRITE_TOKEN</td><td>Auto-populated by the Vercel Blob integration</td></tr>
+                    <tr><td>DESMOS_API_KEY</td><td>Optional — leave blank to skip Desmos graphing</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="guide-step-num">5</div>
+              <div class="guide-step-body">
                 <strong>Click Deploy</strong> — Vercel will build and publish the project.
-                Keep the deployment URL handy for the next step.
+                Keep the deployment URL handy for the next step. After deploy, go back to <em>Settings → Environment Variables</em> and set <code>APP_URL</code> to your Vercel URL, then redeploy. The installer will also patch this automatically in step 6.
               </div>
             </div>
           </div>
@@ -491,14 +513,13 @@ code{
           <div class="divider"></div>
 
           <div class="field">
-            <label for="satoken-input">Choose a Super Admin Code</label>
+            <label for="satoken-input">Installer Checkpoint Code</label>
             <input id="satoken-input" type="text" maxlength="6" placeholder="e.g. A1B2C3"
                    style="text-transform:uppercase;letter-spacing:.14em;font-weight:500"
                    oninput="this.value=this.value.toUpperCase()" />
             <div class="hint">
-              Exactly 6 characters — letters and digits only.<br>
-              You will add this as the <code>WM_SATOKEN</code> environment variable in Vercel.
-              It becomes your super-admin login code inside the app.
+              Enter any 6-character code (letters and digits) to continue.<br>
+              Admin access in Ada is managed through the app's account system — the first account you register after deployment is your admin account. No special environment variable is needed.
             </div>
           </div>
           <div id="vg-err" class="err-msg"></div>
@@ -520,9 +541,9 @@ code{
         <div class="card-body">
           <div id="satoken-reminder" class="satoken-banner" style="display:none">
             <div>
-              <div class="sb-label">Your WM_SATOKEN — make sure this is set in Vercel before continuing</div>
+              <div class="sb-label">Your installer checkpoint code</div>
               <div class="sb-value" id="satoken-reminder-value">——————</div>
-              <div class="sb-note">Add this as an environment variable named <code>WM_SATOKEN</code> in your Vercel project settings.</div>
+              <div class="sb-note">Make sure all environment variables from Step 5 are set in Vercel before continuing.</div>
             </div>
           </div>
           <div class="field">
@@ -981,7 +1002,7 @@ function onVercelGuideContinue() {
   const raw = document.getElementById('satoken-input').value.trim().toUpperCase();
   clrErr('vg-err');
   if (!/^[A-Z0-9]{6}$/.test(raw)) {
-    setErr('vg-err', 'Super Admin code must be exactly 6 alphanumeric characters (A–Z, 0–9).');
+    setErr('vg-err', 'Checkpoint code must be exactly 6 alphanumeric characters (A–Z, 0–9).');
     return;
   }
   S.satoken = raw;

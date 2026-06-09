@@ -1,411 +1,357 @@
-# NoteBooks-Science
+# Ada
 
-> A modern, structured knowledge management system for the Science Administration Department
-> Designed by the **Federation of Socialist Republics (FSR)** to centralize, organize, and democratize academic study materials
+> A self-hosted document browser and knowledge management web app — deployed on Vercel, backed by GitHub.
+
+![Ada — main interface](placeholder-main-interface.png)
 
 ---
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [What is NoteBooks-Science](#what-is-notebooks-science)
-3. [Core Features](#core-features)
-4. [Technical Architecture](#technical-architecture)
-5. [Authentication System](#authentication-system)
-6. [Project Structure](#project-structure)
-7. [Getting Started](#getting-started)
-8. [Team &amp; Credits](#team--credits)
+1. [What is Ada](#what-is-ada)
+2. [Features](#features)
+3. [Technical Architecture](#technical-architecture)
+4. [Project Structure](#project-structure)
+5. [Environment Variables](#environment-variables)
+6. [Getting Started](#getting-started)
+7. [Deployment](#deployment)
+8. [Credits](#credits)
 
 ---
 
-## Overview
+## What is Ada
 
-**NoteBooks-Science** is the Science Administration Department's official study material platform. It replaces fragmented note-sharing workflows with a centralized, professionally managed repository that ensures:
+Ada is a web-based file browser and document viewer that uses a **GitHub repository as its file store**. Files live in your repo; Ada reads them through the GitHub API and renders them in a clean, feature-rich interface — with full support for Markdown, PDFs, Office documents, spreadsheets, math notation, diagrams, and code.
 
-- **Quality Control** — All materials pass through administrative review
-- **Accessibility** — Students and educators can easily find, download, and reference materials
-- **Organization** — Structured hierarchy following the standard NCERT curriculum structure
-- **Scalability** — Built to grow with the department's academic needs
-
-### The Problem We Solve
-
-Science students face a critical challenge: study materials are scattered across personal collections, messaging apps, and informal shares. This leads to:
-
-- Inconsistent material quality
-- Difficulty finding reliable sources
-- No official reference point for curriculum-aligned content
-- Repeated manual file distribution
-
-NoteBooks-Science provides the solution.
+The app is deployed entirely on Vercel (static frontend + serverless API functions). There is no dedicated server to maintain — GitHub holds the content, Upstash Redis holds user sessions, and Vercel Blob holds pending uploads until they are reviewed.
 
 ---
 
-## What is NoteBooks-Science
+## Features
 
-NoteBooks-Science is a **domain-specific knowledge platform** that functions as:
+### File Browser
 
-1. **A Centralized Repository** — One authoritative source for all Science curriculum materials
-2. **A Document Management System** — Organized filing system with granular categorization
-3. **An Anonymous Submission Interface** — Users can contribute without revealing their identity
-4. **A Moderation Workflow** — Administrators review and approve all content before publication
-5. **A Learning Hub** — Integrated discussion forums for doubt resolution and collaborative learning
+Ada reads a `files.json` manifest from your GitHub repo and builds an interactive file tree from it. Folders are collapsible, files open in preview windows, and a breadcrumb trail tracks your location.
 
-### Key Capabilities
+![File browser and folder navigation](placeholder-file-browser.png)
 
-#### Structured Note Publishing
+- Navigate folders with click or keyboard
+- Breadcrumb trail and back navigation
+- Emoji file-type icons (📝 Markdown, 📕 PDF, 📘 Word, 📗 Excel, 📙 PowerPoint…)
+- Right-click context menu for Preview or Download
 
-- **Curriculum-Aligned Organization** — NCERT-based hierarchy (Biology, Chemistry, Physics, Geology)
-- **Multi-Format Support** — Markdown (.md), PDF, spreadsheets, presentations
-- **Rich Categorization** — Each chapter organized into:
-  - **NOTES** — Comprehensive study material
-  - **GLOSSARY** — Key terms and definitions
-  - **PQs** — Previous questions with solutions
-  - **REVISION_MINDMAPS** — Visual revision aids
+### Document Preview
 
-#### Anonymous Upload System
+Click any file to open a floating preview window. Multiple files can be open at once on desktop, each in its own draggable, resizable window with a minimise button that docks it to a taskbar at the bottom.
 
-- Users submit materials without revealing their identity
-- All submissions appear in an admin review queue
-- Admins evaluate for accuracy, relevance, and quality
-- Approved materials become publicly available
+![Floating document preview windows with taskbar](placeholder-preview-windows.png)
 
-#### Moderated Content Delivery
+Supported formats:
 
-- Only vetted materials appear on the platform
-- Maintains high academic standards
-- Prevents misinformation and low-quality content
-- Ensures all resources align with curriculum
+- **Markdown** — full rendering with all extensions (see below)
+- **PDF** — in-browser PDF viewer via PDF.js
+- **DOCX / XLSX / PPTX / PPT** — rendered via Microsoft Office Online viewer
+- **Images** — inline display
+- **Plain text and code** — syntax-highlighted
 
-#### Integrated Discussion Layers (NotePad Forums)
+### Rich Markdown Rendering
 
-- Topic-based discussion threads tied to specific materials
-- Doubt resolution workflows with moderator support
-- Collaborative answer building from community
-- Persistent academic dialogue preserved for future reference
+Markdown files are rendered with a full scientific extension stack:
 
----
+- **MathJax 3** — inline `\(...\)` and display `\[...\]` LaTeX math
+- **TikZJax** — renders `` ```tikz `` fenced blocks as TikZ/PGF diagrams using a WASM TeX engine
+- **Mermaid** — `` ```mermaid `` blocks for flowcharts, sequence diagrams, and more
+- **Desmos** — interactive graphing calculator embeds
+- **Highlight.js** — syntax highlighting for code blocks, auto light/dark themed
+- **Obsidian syntax compatibility** — Obsidian-flavoured Markdown (callouts, wikilinks, etc.) renders correctly
+- Footnotes, subscript, superscript via markdown-it plugins
 
-## Core Features
+![Markdown rendering with math, diagrams, and code](placeholder-markdown-rendering.png)
 
-### Document Management
+### Authentication
 
-- Browse by subject, chapter, and content type
-- Search functionality across all materials
-- Download multiple formats
-- Material version history and updates
+A full email + password auth system is built in, backed by Upstash Redis and secured with industry-standard practices.
 
-### User Experience
+![Login and registration screens](placeholder-auth-screens.png)
 
-- Clean, intuitive interface using Markdown rendering
-- Fast navigation and retrieval
-- LaTeX/MathJax support for scientific notation
-- Diagram rendering (TikZ, Mermaid)
-- Syntax-highlighted code blocks
+- **Register** — email + password (min. 8 characters), reCAPTCHA v3
+- **Login** — JWT issued on success, session lasts 30 days
+- **Forgot Password** — email reset link via Resend, valid for 15 minutes, 15-minute cooldown between requests
+- **Security** — bcrypt (10 salt rounds), JWT, reCAPTCHA v3, rate limiting
 
-### Content Support
+### Anonymous Upload & Review Queue
 
-- **Markdown Support** — Full markdown + scientific extensions
-- **Mathematical Notation** — MathJax with LaTeX/AMS support
-- **Diagrams** — TikZ and Mermaid diagram rendering
-- **Code Syntax** — Highlight.js with multiple language support
-- **Graphing** — Desmos graphing calculator integration
+Any visitor can submit a file for admin review without logging in. Uploaded files are held in Vercel Blob storage and their metadata queued in the GitHub repo until an admin approves or rejects them.
+
+![Upload flow and admin review queue](placeholder-upload-queue.png)
+
+- Drag-and-drop or click-to-pick file upload
+- 25 MB per-file size limit enforced server-side
+- Upload queue stored in `waiting-list/index.json` in the repo
+- Approved files are committed to the repo and appear in the file tree
 
 ### Admin Panel
 
-- Submission review interface
-- Content approval/rejection workflows
-- User role management
-- Analytics and usage tracking
+Admins access a management panel from the toolbar. Role-based permissions (Create, Delete, Modify, Approve) can be assigned per admin code.
+
+![Admin panel overview](placeholder-admin-panel.png)
+
+Inside the panel:
+
+- **Pending Uploads** — review, approve, or reject queued submissions
+- **SSH User Management** — manage SSH-authenticated users
+- **Admin Code Management** — create, revoke, and rotate admin codes (super-admin only)
+- **Developer Console** — an SSH-style browser terminal (`admin-terminal.js`) for inspecting users, logs, and session state
+
+![Admin terminal](placeholder-admin-terminal.png)
+
+### PWA & Offline Support
+
+Ada is a Progressive Web App. The service worker pre-caches the app shell, fonts, and all CDN assets on first load. Subsequent visits load instantly and work offline (file content requires a network connection, but the app shell and previously-cached assets are available).
+
+### Mobile Support
+
+A dedicated mobile layout (`bin/mobile.js`) adapts the interface for small screens — the floating-window desktop model is replaced with a full-screen drawer-style preview.
+
+![Mobile interface](placeholder-mobile.png)
+
+### Installer Wizard
+
+`installer.html` is a step-by-step setup wizard for configuring a new Ada instance. It walks through:
+
+1. Entering a GitHub PAT and detecting the repo
+2. Naming the instance
+3. Triggering and monitoring GitHub Actions workflows
+4. Setting up Vercel (with exact env var instructions)
+5. Entering the Vercel deployment URL and patching it into the repo
 
 ---
 
 ## Technical Architecture
 
-NoteBooks-Science is built with modern web technologies designed for performance and reliability.
+```
+┌─────────────────────────────────────────────────────┐
+│                     Browser                         │
+│  index.html + bin/*.js + bin/style.css              │
+│  (Vanilla JS, no framework)                         │
+└────────────────────┬────────────────────────────────┘
+                     │  fetch()
+          ┌──────────▼──────────┐
+          │   Vercel Serverless  │
+          │   /api/*.js / .mjs   │
+          └──┬────┬─────┬───┬───┘
+             │    │     │   │
+     GitHub  │  Blob  Redis  Resend
+     API     │  Store (Upstash)  Email
+```
 
-### Frontend Stack
+### Frontend
 
-- **HTML5** — Semantic markup
-- **CSS** — Custom styling with design tokens and CSS variables
-- **Vanilla JavaScript** — No framework overhead, full control
-- **Markdown-it** — Markdown parsing with plugin ecosystem
-- **MathJax 3** — LaTeX mathematical rendering
-- **TikZJax** — TikZ diagram rendering
-- **Mermaid** — Flowchart and diagram support
-- **Highlight.js** — Code syntax highlighting
-- **Desmos API** — Interactive graphing calculator
+- Pure HTML5 + CSS + Vanilla JavaScript — no frontend framework
+- `bin/app.js` — core file tree, window management, preview routing
+- `bin/auth.js` — session/token management on the client
+- `bin/modern-auth.js` — email+password auth UI controllers
+- `bin/upload.js` — upload flow and waiting-list management
+- `bin/mobile.js` — mobile-specific layout and interactions
+- `bin/markdown.js` + `bin/md-init.js` — Markdown rendering pipeline
+- `bin/obsidian-markdown-it.js` — Obsidian syntax compatibility layer
+- `bin/style.css` — all styling via CSS custom properties / design tokens
+- `bin/tikzjax/` — bundled TikZJax WASM engine
 
-### Backend Infrastructure
+### Backend (Vercel Serverless Functions)
 
-- **Upstash Redis** — Distributed session and data storage
-- **Resend** — Email service for password reset notifications
-- **Google reCAPTCHA v3** — Bot protection on authentication forms
+| File | Purpose |
+|---|---|
+| `api/config.js` | Exposes public env vars to the frontend on app load |
+| `api/auth.mjs` | Register, login, forgot password, reset password |
+| `api/gh.js` | GitHub Contents API proxy (getFile, putFile, deleteFile) |
+| `api/raw.js` | Serves raw file bytes from the GitHub repo (for Office viewer) |
+| `api/blob.js` | Vercel Blob proxy (upload, delete, fetch) |
+| `api/desmos.js` | Proxies the Desmos calculator JS (keeps the API key server-side) |
+| `api/ssh.js` | SSH-key auth backend (legacy, uses a separate Upstash Redis instance) |
 
-### Security Features
+### Storage
 
-- **JWT Tokens** — Secure session management
-- **bcrypt Hashing** — Industry-standard password hashing (10-round salting)
-- **CAPTCHA Protection** — Google reCAPTCHA v3 on all forms
-- **Cooldown Periods** — 15-minute cooldown on password reset requests
-- **Redis Storage** — Distributed session management with fallback to in-memory storage
-
-### Data Flow
-
-1. User submits form (with reCAPTCHA token)
-2. CAPTCHA validated server-side before processing
-3. Credentials hashed and stored in Redis
-4. JWT issued for session management
-5. Each request validated against stored session
-
----
-
-## Authentication System
-
-### Modern Email + Password System (v2.0)
-
-**Old System** — SSH key-based authentication (deprecated and removed)
-
-**New System** — Email + password with industry-standard security:
-
-#### Login
-
-- Email and password input
-- reCAPTCHA v3 bot detection
-- JWT token issued on success
-- Session persists for 30 days
-
-#### Registration
-
-- Email validation
-- Password requirements (minimum 8 characters)
-- reCAPTCHA v3 bot detection
-- Automatic account creation
-
-#### Forgot Password
-
-- Email-based password recovery
-- reCAPTCHA protection
-- 15-minute cooldown between requests (prevents abuse)
-- Secure token-based reset link
-- Password reset via email link
-
-### Security Specifications
-
-- **Password Hashing** — bcrypt with 10 salt rounds
-- **Session Tokens** — JWT with 30-day expiration
-- **CAPTCHA** — Google reCAPTCHA v3 (invisible, doesn't interfere with UX)
-- **Rate Limiting** — 15-minute cooldown on password reset
-- **Storage** — Upstash Redis with automatic fallback
-- **Email Service** — Resend for secure email delivery
+| Store | What it holds |
+|---|---|
+| **GitHub repo** | All content files, `files.json` manifest, `waiting-list/index.json` |
+| **Upstash Redis** (`KV_REST_API_*`) | User accounts, JWT sessions, password-reset tokens |
+| **Upstash Redis** (`DATABASE_KV_*`) | SSH auth data (separate database) |
+| **Vercel Blob** | Pending upload file bytes (before admin approval) |
 
 ---
 
 ## Project Structure
 
 ```
-NoteBooks-Science/
-├── index.html                 # Main application entry point
-├── package.json              # Project dependencies
-├── README.md                 # This file
-├── files.json                # Content hierarchy definition
-├── api/
-│   ├── auth.js              # Authentication backend (login, register, forgot password)
-│   ├── desmos.js            # Desmos graphing calculator API proxy
-│   └── [admin-endpoints]    # Admin submission review handlers
-├── bin/
-│   ├── auth.js              # Frontend session/user management
-│   ├── modern-auth.js       # Modern email+password UI controllers
-│   ├── md-init.js           # Markdown rendering initialization
-│   ├── obsidian-markdown-it.js  # Obsidian syntax compatibility
-│   ├── style.css            # Design tokens and styling
-│   ├── tikzjax/             # TikZ rendering engine
-│   └── [utilities]          # Helper scripts
-├── AI-NOTES/
-│   ├── BIOLOGY/             # Biology chapter hierarchy (NCERT aligned)
-│   │   ├── BIOLOGY01-THE_LIVING_WORLD/
-│   │   │   ├── NOTES.md
-│   │   │   ├── GLOSSARY.md
-│   │   │   ├── PQs.md
-│   │   │   └── REVISION_MINDMAPS.md
-│   │   ├── BIOLOGY02-BIOLOGICAL_CLASSIFICATION/
-│   │   └── ... [12 chapters total]
-│   ├── CHEMISTRY/           # Chemistry content (similar structure)
-│   ├── PHYSICS/             # Physics content (similar structure)
-│   ├── GEOLOGY/             # Geology content (similar structure)
-│   └── ...
-├── public/
-│   ├── favicon.png          # Application icon
-│   └── manifest.json        # PWA manifest
-└── .git/                    # Git repository with version history
+ada/
+├── index.html                  # App entry point (single-page app shell)
+├── offline.html                # Shown by service worker when offline
+├── installer.html              # Setup wizard for new instances
+├── service-worker.js           # PWA caching strategy
+├── manifest.json               # PWA manifest (name, icons, theme colour)
+├── files.json                  # File tree manifest (read by the app)
+├── favicon.png                 # App icon
+├── package.json                # npm dependencies (Vercel runtime)
+│
+├── api/                        # Vercel serverless functions
+│   ├── config.js               # Public env var endpoint
+│   ├── auth.mjs                # Auth (register / login / password reset)
+│   ├── gh.js                   # GitHub Contents API proxy
+│   ├── raw.js                  # Raw file serving proxy
+│   ├── blob.js                 # Vercel Blob proxy
+│   ├── desmos.js               # Desmos API proxy
+│   └── ssh.js                  # SSH auth backend (legacy)
+│
+├── bin/                        # Frontend JS & static assets
+│   ├── app.js                  # Core app logic (file tree, windows, routing)
+│   ├── auth.js                 # Client-side session management
+│   ├── modern-auth.js          # Email+password auth UI
+│   ├── upload.js               # Upload flow & waiting-list helpers
+│   ├── mobile.js               # Mobile layout
+│   ├── markdown.js             # Markdown rendering
+│   ├── md-init.js              # Markdown initialisation
+│   ├── obsidian-markdown-it.js # Obsidian syntax layer
+│   ├── admin-terminal.js       # In-browser admin terminal
+│   ├── gh-proxy.js             # Client-side GitHub proxy helpers
+│   ├── ssh-auth.js             # SSH auth client helpers (legacy)
+│   ├── ssh-crypto.js           # SSH key crypto (legacy)
+│   ├── ssh-login-ui.js         # SSH login UI (legacy)
+│   ├── style.css               # All styles (CSS custom properties)
+│   ├── admins.json             # Admin code list (managed via panel)
+│   └── tikzjax/                # Bundled TikZJax WASM engine
+│       └── output/tikzjax.js
+│
+├── community/
+│   └── community.html          # Community page
+│
+└── waiting-list/
+    └── index.json              # Pending upload queue metadata
 ```
 
-### Content Organization
+---
 
-Materials are organized following the **NCERT curriculum structure**:
+## Environment Variables
 
-```
-BIOLOGY
-├── BIOLOGY01: The Living World
-├── BIOLOGY02: Biological Classification
-├── BIOLOGY03: Plant Kingdom
-├── BIOLOGY04: Animal Kingdom
-├── BIOLOGY05: Morphology of Flowering Plants
-├── BIOLOGY06: Anatomy of Flowering Plants
-├── BIOLOGY07: Structural Organisation in Animals
-├── BIOLOGY08: Cell - The Unit of Life
-├── BIOLOGY09: Biomolecules
-├── BIOLOGY10: Cell Cycle and Cell Division
-├── BIOLOGY11: Transport in Plants
-├── BIOLOGY12: Mineral Nutrition
-├── BIOLOGY13: Photosynthesis in Higher Plants
-├── BIOLOGY14: Respiration in Plants
-├── BIOLOGY15: Plant Growth and Development
-├── BIOLOGY16: Digestion and Absorption
-└── ... [more chapters]
-```
+Set these in your Vercel project dashboard under **Settings → Environment Variables**.
 
-Each chapter contains 4 standard sections:
+### Public (non-secret, exposed to the frontend via `/api/config`)
 
-- **NOTES** — Main study material
-- **GLOSSARY** — Key terms and concepts
-- **PQs** — Previous exam questions with detailed solutions
-- **REVISION_MINDMAPS** — Visual summaries for quick revision
+| Variable | Example | Description |
+|---|---|---|
+| `GITHUB_REPO` | `yourname/reponame` | The GitHub repository that stores your content |
+| `GITHUB_BRANCH` | `main` | The branch to read from |
+| `APP_URL` | `https://your-app.vercel.app` | Your Vercel deployment URL |
+| `GITPAGE_URL` | `https://yourname.github.io/reponame` | Your GitHub Pages URL (used as CDN fallback) |
+
+### Secret (server-side only, never sent to the browser)
+
+| Variable | Description | Where to get it |
+|---|---|---|
+| `GITHUB_PAT` | GitHub Personal Access Token with `repo` scope (or fine-grained: Contents read+write) | [GitHub Developer Settings](https://github.com/settings/personal-access-tokens/new) |
+| `JWT_SECRET` | Secret key for signing JWTs | `openssl rand -base64 32` |
+| `RESEND_API_KEY` | API key for sending password-reset emails | [resend.com](https://resend.com) |
+| `RECAPTCHA_SECRET_KEY` | Google reCAPTCHA v3 server-side secret | [Google reCAPTCHA Console](https://www.google.com/recaptcha/admin) |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token for upload storage | Auto-populated by the Vercel Blob integration |
+| `KV_REST_API_URL` | Upstash Redis URL — user accounts & sessions | [Upstash Console](https://console.upstash.com/) |
+| `KV_REST_API_TOKEN` | Upstash Redis token (same database as above) | [Upstash Console](https://console.upstash.com/) |
+| `DATABASE_KV_REST_API_URL` | Upstash Redis URL — SSH auth (separate database) | [Upstash Console](https://console.upstash.com/) |
+| `DATABASE_KV_REST_API_TOKEN` | Upstash Redis token — SSH auth | [Upstash Console](https://console.upstash.com/) |
+| `DESMOS_API_KEY` | Desmos API key (optional — degrades gracefully if unset) | [Desmos API](https://www.desmos.com/api) |
+
+> `KV_REST_API_URL` and `KV_REST_API_TOKEN` are auto-populated by the **Vercel × Upstash Redis** marketplace integration if you connect it from the Vercel dashboard. Same for `BLOB_READ_WRITE_TOKEN` with the Vercel Blob integration.
 
 ---
 
 ## Getting Started
 
-### Prerequisites
+### Option A — Installer Wizard (recommended)
 
-- Node.js 18+
-- npm or yarn
-- Environment variables configured (see below)
+1. Fork this repository to your GitHub account.
+2. Enable **GitHub Pages** on the repo (source: root of `main` branch).
+3. Open `https://<your-username>.github.io/<repo-name>/installer.html`.
+4. Follow the wizard — it will ask for a GitHub PAT, configure the repo, walk you through Vercel setup step by step, and patch the deployment URL back into the repo automatically.
 
-### Installation
+### Option B — Manual Setup
 
-1. **Clone the repository**
+**Prerequisites:** Node.js 18+, a Vercel account, an Upstash account.
+
+1. **Fork / clone the repository**
 
    ```bash
-   git clone https://github.com/fsr-science/NoteBooks-Science.git
-   cd NoteBooks-Science
+   git clone https://github.com/yourname/ada.git
+   cd ada
    ```
+
 2. **Install dependencies**
 
    ```bash
    npm install
    ```
-3. **Configure environment variables**
 
-   Create a `.env.local` file in the project root:
+3. **Set environment variables**
 
-   ```
-   RECAPTCHA_SITE_KEY=your_google_recaptcha_v3_site_key
-   RECAPTCHA_SECRET_KEY=your_google_recaptcha_v3_secret_key
-   RESEND_API_KEY=your_resend_email_api_key
-   JWT_SECRET=your_jwt_secret_key
+   Create `.env.local` at the project root for local development:
+
+   ```env
+   GITHUB_REPO=yourname/reponame
+   GITHUB_BRANCH=main
    APP_URL=http://localhost:3000
-   UPSTASH_REDIS_REST_URL=your_upstash_redis_url
-   UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
+   GITPAGE_URL=https://yourname.github.io/reponame
+
+   GITHUB_PAT=your_github_pat
+   JWT_SECRET=your_jwt_secret
+   RESEND_API_KEY=your_resend_key
+   RECAPTCHA_SECRET_KEY=your_recaptcha_secret
+   KV_REST_API_URL=your_upstash_url
+   KV_REST_API_TOKEN=your_upstash_token
+   DATABASE_KV_REST_API_URL=your_ssh_upstash_url
+   DATABASE_KV_REST_API_TOKEN=your_ssh_upstash_token
+   DESMOS_API_KEY=your_desmos_key
    ```
 
-   **Getting the Keys:**
-
-   - **reCAPTCHA Keys** — [Google reCAPTCHA Console](https://www.google.com/recaptcha/admin)
-   - **Resend API Key** — [Resend Dashboard](https://resend.com)
-   - **JWT Secret** — Generate with `openssl rand -base64 32`
-   - **Upstash Redis** — [Upstash Console](https://console.upstash.com/)
-4. **Start development server**
+4. **Run locally**
 
    ```bash
    npm run dev
    ```
 
-   The application will be available at `http://localhost:3000`
-
-### Building for Production
-
-```bash
-npm run build
-npm run start
-```
+   The app will be available at `http://localhost:3000`.
 
 ---
 
-## Team & Credits
+## Deployment
 
-### Project Leadership
+Ada is designed to run on **Vercel**.
 
-- **Harshit Saha** — Founder of NoteBooks-X (UBSR), Project Creator and Maintainer
+1. Push your fork to GitHub.
+2. Go to [vercel.com/new](https://vercel.com/new) and import your repository.
+3. Add all the environment variables listed above under **Settings → Environment Variables** before deploying.
+4. Click **Deploy**.
+5. Once deployed, set `APP_URL` to your Vercel deployment URL and redeploy.
 
-  - *Science Administration Department (Head)*
-  - Just your average fella
-- **Rishiraj Adhikari** — President (FSR)
-
-  - President of whole Operation
-  - Federation-wide Coordination
-- **Pratyush Chanda** — Project Founder of NoteBooks-Project (FSR)
-
-  - *Science Administration Department*
-  - Main Upgrader and Project Maintainer
-
-### Technology Acknowledgments
-
-**Frontend Technologies**
-
-- Markdown-it team for markdown parsing
-- MathJax community for LaTeX rendering
-- TikZJax developers for diagram support
-- Mermaid team for flowchart rendering
-- Highlight.js for syntax highlighting
-- Desmos team for graphing calculator
-
-**Security & Infrastructure**
-
-- Google reCAPTCHA team
-- Upstash team for Redis hosting
-- Resend team for email service
-- Vercel for deployment platform
-
-### Contributors
-
-We welcome contributions from the FSR community. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Vercel will automatically re-deploy on every push to the configured branch.
 
 ---
 
-## Project Status
+## Credits
 
-- **Version** — 1.0 (Modern Authentication System)
-- **Status** — Active Development
-- **Last Updated** — June 2026
-- **Maintenance** — Science Administration Department
+- **Pratyush Chanda** — Project creator and maintainer
 
-### Recent Changes (v1.0)
+**Libraries & services used:**
 
-- ✅ Replaced SSH authentication with modern email + password system
-- ✅ Integrated Google reCAPTCHA v3 for bot protection
-- ✅ Added password reset via email (Resend)
-- ✅ Implemented JWT-based session management
-- ✅ Added bcrypt password hashing
-- ✅ Created modern, user-friendly login/register UI
-- ✅ Removed legacy SSH auth files
-
-### Roadmap
-
-- [ ] Discussion forums (NotePad integration)
-- [ ] Content moderation dashboard
-- [ ] Advanced search and filtering
-- [ ] Progress tracking and bookmarks
-- [ ] Offline mode support
-- [ ] Mobile app (React Native)
+- [Markdown-it](https://github.com/markdown-it/markdown-it) — Markdown parsing
+- [MathJax 3](https://www.mathjax.org/) — LaTeX math rendering
+- [TikZJax](https://github.com/kisonecat/tikzjax) — TikZ diagram rendering
+- [Mermaid](https://mermaid.js.org/) — Flowchart and diagram rendering
+- [Highlight.js](https://highlightjs.org/) — Code syntax highlighting
+- [Desmos API](https://www.desmos.com/api) — Graphing calculator
+- [Upstash Redis](https://upstash.com/) — Serverless Redis for auth storage
+- [Resend](https://resend.com/) — Transactional email
+- [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) — Upload staging storage
+- [Google reCAPTCHA v3](https://developers.google.com/recaptcha) — Bot protection
+- [Vercel](https://vercel.com/) — Deployment platform
 
 ---
 
-## License
-
-NoteBooks-Science is developed by the **Federation of Socialist Republics (FSR)** for the Science Administration Department. All materials are curated for educational use within the institution.
-
-For questions or contributions, contact: **fsr-science@gmail.com**
-
----
-
-**Made with dedication by the FSR community** 🔬📚
+**Ada** — your files, your way.
