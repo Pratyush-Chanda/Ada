@@ -336,7 +336,8 @@ Vercel will automatically re-deploy on every push to the configured branch.
 
 ## Credits
 
-- **Pratyush Chanda** — Project creator and maintainer
+- **Pratyush Chanda**
+- **Harshit Saha**
 
 **Libraries & services used:**
 
