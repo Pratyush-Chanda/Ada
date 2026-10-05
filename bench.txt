@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "generated_at": "2026-10-05T16:38:08.893780+00:00",
+  "generated_at": "2026-10-05T16:42:42.893773+00:00",
   "device_profile": {
     "os": "Linux",
     "os_release": "6.17.0-1022-azure",
     "architecture": "x86_64",
-    "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
     "logical_cpus": 4,
-    "memory_bytes": 16766414848,
-    "storage_device": 66305,
+    "memory_bytes": 16766410752,
+    "storage_device": 2049,
     "python_implementation": "CPython",
     "python_version": "3.12.3",
     "git_object_format": "sha1"
@@ -19,13 +19,13 @@
     "small": {
       "workers": 2,
       "samples": 9,
-      "bytes_per_trial": 561471,
+      "bytes_per_trial": 561683,
       "throughput_bytes_per_second": {
-        "1": 289945772.4342112,
-        "2": 529651147.9835378,
-        "3": 459134509.2359092,
-        "4": 385456255.49285287,
-        "6": 368099498.86074543
+        "1": 230182385.2076106,
+        "2": 345245068.7217394,
+        "3": 332283466.4297166,
+        "4": 277025883.9872755,
+        "6": 262504387.2786483
       }
     },
     "large": {
