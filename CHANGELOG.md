@@ -1,4 +1,6 @@
 # Changelog
+## 0.0.56b_beta.1
+This beta improves repository manifest generation with richer file metadata, adaptive concurrent processing, device-aware calibration, safer output handling, and automated tests/CI integration.
 
 ## 0.0.56a_beta.1
 
