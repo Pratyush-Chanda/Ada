@@ -3,3 +3,6 @@ tree.txt
 REFERENCE-BOOKS-SOURCE/
 compression.sh
 report.sh
+bench.txt.*.tmp
+__pycache__/
+*.py[cod]

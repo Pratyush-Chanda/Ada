@@ -4,8 +4,17 @@
   "children": [
     {
       "type": "file",
+      "name": "CHANGELOG.md",
+      "path": "CHANGELOG.md",
+      "sha": "79ccbdb31e137dcf98d8b9feac05ba40889a9ff0",
+      "mime": "text/markdown"
+    },
+    {
+      "type": "file",
       "name": "README.md",
-      "path": "README.md"
+      "path": "README.md",
+      "sha": "83a623bc221fa21c8307fdc0f9fd4d7d11084403",
+      "mime": "text/markdown"
     },
     {
       "type": "folder",
@@ -13,38 +22,52 @@
       "children": [
         {
           "type": "file",
-          "name": "MARKDOWN-1.md",
-          "path": "TEST/MARKDOWN-1.md"
-        },
-        {
-          "type": "file",
           "name": "file-sample_100kB.docx",
-          "path": "TEST/file-sample_100kB.docx"
+          "path": "TEST/file-sample_100kB.docx",
+          "sha": "365b8e19ca5cc76c49133385df59bdd39a9fe15e",
+          "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         },
         {
           "type": "file",
           "name": "file-sample_150kB.pdf",
-          "path": "TEST/file-sample_150kB.pdf"
+          "path": "TEST/file-sample_150kB.pdf",
+          "sha": "94d947797464aa493ba9634f4e5f38ad2ca4717a",
+          "mime": "application/pdf"
         },
         {
           "type": "file",
           "name": "file_example_PPT_250kB.ppt",
-          "path": "TEST/file_example_PPT_250kB.ppt"
+          "path": "TEST/file_example_PPT_250kB.ppt",
+          "sha": "a40dac18f77a284f76fec18483530ff4afce9f97",
+          "mime": "application/vnd.ms-powerpoint"
         },
         {
           "type": "file",
           "name": "file_example_XLSX_10.xlsx",
-          "path": "TEST/file_example_XLSX_10.xlsx"
+          "path": "TEST/file_example_XLSX_10.xlsx",
+          "sha": "ffe1270865c0ab4e4a3b38b83ea2f56007c43384",
+          "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        },
+        {
+          "type": "file",
+          "name": "MARKDOWN-1.md",
+          "path": "TEST/MARKDOWN-1.md",
+          "sha": "7a88a779ad07cbcddff6650337df2b2c6f2dec33",
+          "mime": "text/markdown"
         },
         {
           "type": "file",
           "name": "test-desmos.md",
-          "path": "TEST/test-desmos.md"
+          "path": "TEST/test-desmos.md",
+          "sha": "7be2355875125c64245e6abd2847bd9127abd79e",
+          "mime": "text/markdown"
         },
         {
           "type": "file",
           "name": "test-sizing-fixes.md",
-          "path": "TEST/test-sizing-fixes.md"
+          "path": "TEST/test-sizing-fixes.md",
+          "sha": "374f30752a7f3ebbf45e1dc2fafa432e0c4ea42e",
+          "mime": "text/markdown"
         }
       ]
     }
