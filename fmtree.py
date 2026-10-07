@@ -502,7 +502,7 @@ def calculate_hashes(
                         completed += 1
                         print(
                             f"HASHED [{completed}/{total}] {category} | {path_key} | "
-                            f"{sizes[path]:,} bytes.",
+                            f"{sizes[path]:,} bytes | sha={file_hash}",
                             flush=True,
                         )
             return group_results
