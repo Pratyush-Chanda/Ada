@@ -67,6 +67,27 @@ class FmtreeTests(unittest.TestCase):
             expected = subprocess.check_output(["git", "hash-object", str(path)], text=True).strip()
             self.assertEqual(actual[fmtree.relative_path(path)], expected)
 
+    def test_custom_worker_count_above_six_is_not_capped(self):
+        files = []
+        for i in range(8):
+            path = self.root / f"custom-{i}.md"
+            path.write_text(f"file {i}", encoding="utf-8")
+            files.append(path)
+
+        real_executor = fmtree.concurrent.futures.ThreadPoolExecutor
+        with mock.patch.object(
+            fmtree.concurrent.futures,
+            "ThreadPoolExecutor",
+            wraps=real_executor,
+        ) as executor:
+            hashes = fmtree.calculate_hashes(
+                files, "sha1", {"small": 4, "large": 2}, verbose=False, worker_count=8
+            )
+
+        executor.assert_called_once()
+        self.assertEqual(executor.call_args.kwargs["max_workers"], 8)
+        self.assertEqual(len(hashes), 8)
+
     def test_verbose_hashing_reports_each_file_and_hash(self):
         files = []
         for name, content in (("first.md", "first"), ("second.md", "second")):
@@ -137,6 +158,27 @@ class FmtreeTests(unittest.TestCase):
             chosen = fmtree.get_worker_settings([], "sha1", self.root)
         self.assertEqual(chosen, {"small": 2, "large": 1})
 
+    def test_skip_benchmark_uses_cache_or_defaults_without_profiling(self):
+        with mock.patch.object(
+            fmtree, "device_profile", side_effect=AssertionError("skip should not inspect profile")
+        ), mock.patch.object(
+            fmtree, "benchmark_settings", side_effect=AssertionError("skip should not benchmark")
+        ):
+            self.assertEqual(
+                fmtree.get_worker_settings([], "sha1", self.root, skip_benchmark=True),
+                fmtree.DEFAULT_WORKERS,
+            )
+            cache = {
+                "schema": fmtree.BENCH_SCHEMA,
+                "device_profile": {"old": "device"},
+                "settings": {"small": {"workers": 3}, "large": {"workers": 2}},
+            }
+            (self.root / "bench.txt").write_text(json.dumps(cache), encoding="utf-8")
+            self.assertEqual(
+                fmtree.get_worker_settings([], "sha1", self.root, skip_benchmark=True),
+                {"small": 3, "large": 2},
+            )
+
     def test_cli_writes_complete_manifest_once_with_hash_and_mime(self):
         (self.root / "readme.md").write_text("hello", encoding="utf-8")
         output = self.root / "out.json"
@@ -150,6 +192,37 @@ class FmtreeTests(unittest.TestCase):
         self.assertEqual(entry["mime"], "text/markdown")
         self.assertFalse((self.root / "files.json").exists())
         self.assertNotIn("HASHED ", stdout.getvalue())
+
+    def test_cli_custom_workers_bypass_benchmark_and_skip_flag_avoids_cache_creation(self):
+        (self.root / "readme.md").write_text("hello", encoding="utf-8")
+        custom_output = self.root / "custom.json"
+        stdout = io.StringIO()
+        with mock.patch.object(
+            fmtree,
+            "get_worker_settings",
+            side_effect=AssertionError("explicit worker override must bypass benchmarking"),
+        ), redirect_stdout(stdout):
+            self.assertEqual(
+                fmtree.main(
+                    ["--root", str(self.root), "--out", str(custom_output), "--workers", "8", "--quiet"]
+                ),
+                0,
+            )
+        self.assertIn("8 custom hash worker(s)", stdout.getvalue())
+
+        skipped_output = self.root / "skip.json"
+        with mock.patch.object(
+            fmtree, "benchmark_settings", side_effect=AssertionError("skip flag must not benchmark")
+        ), mock.patch.object(
+            fmtree, "device_profile", side_effect=AssertionError("skip flag must not inspect profile")
+        ), redirect_stdout(io.StringIO()):
+            self.assertEqual(
+                fmtree.main(
+                    ["--root", str(self.root), "--out", str(skipped_output), "--skip-benchmark", "--quiet"]
+                ),
+                0,
+            )
+        self.assertFalse((self.root / "bench.txt").exists())
 
 
 if __name__ == "__main__":

@@ -420,12 +420,25 @@ def _ask_to_rebenchmark() -> bool:
         print("Please answer y or n.")
 
 
-def get_worker_settings(files: list[Path], object_format: str, root: Path) -> dict[str, int]:
+def get_worker_settings(
+    files: list[Path],
+    object_format: str,
+    root: Path,
+    skip_benchmark: bool = False,
+) -> dict[str, int]:
     """Reuse a matching cache, or benchmark on first use/profile mismatch."""
     bench_path = root / "bench.txt"
     cache = read_bench_file(bench_path)
-    profile = device_profile()
     old_settings = _settings_from_cache(cache)
+
+    if skip_benchmark:
+        if old_settings:
+            print(f"Benchmark skipped; using cached worker settings from {bench_path}.")
+            return old_settings
+        print("Benchmark skipped; using safe default worker settings.")
+        return DEFAULT_WORKERS.copy()
+
+    profile = device_profile()
 
     if cache is not None and cache.get("device_profile") == profile and old_settings:
         print(f"Using matching benchmark profile from {bench_path}.")
@@ -470,8 +483,9 @@ def calculate_hashes(
     object_format: str,
     settings: dict[str, int],
     verbose: bool = True,
+    worker_count: int | None = None,
 ) -> dict[str, str]:
-    """Hash files concurrently and report each completed hash when verbose."""
+    """Hash files concurrently; an explicit worker count overrides auto limits."""
     sizes = {path: path.stat().st_size for path in files}
     groups = {
         "small": [path for path in files if sizes[path] <= SMALL_FILE_LIMIT],
@@ -485,6 +499,36 @@ def calculate_hashes(
     completed = 0
     total = len(files)
 
+    def finish_hash(future: concurrent.futures.Future, path: Path, category: str) -> tuple[str, str]:
+        nonlocal completed
+        file_hash = future.result()
+        path_key = relative_path(path)
+        if verbose:
+            with progress_lock:
+                completed += 1
+                print(
+                    f"HASHED [{completed}/{total}] {category} | {path_key} | "
+                    f"{sizes[path]:,} bytes | sha={file_hash}",
+                    flush=True,
+                )
+        return path_key, file_hash
+
+    if worker_count is not None:
+        if worker_count < 1:
+            raise ValueError("worker_count must be at least 1")
+        results: dict[str, str] = {}
+        ordered_files = sorted(files, key=lambda path: (-sizes[path], path.as_posix().casefold()))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=worker_count) as executor:
+            future_paths = {
+                executor.submit(hash_file, path, object_format): path for path in ordered_files
+            }
+            for future in concurrent.futures.as_completed(future_paths):
+                path = future_paths[future]
+                category = "small" if sizes[path] <= SMALL_FILE_LIMIT else "large"
+                path_key, file_hash = finish_hash(future, path, category)
+                results[path_key] = file_hash
+        return results
+
     def hash_group(category: str) -> dict[str, str]:
         with concurrent.futures.ThreadPoolExecutor(max_workers=allocated[category]) as executor:
             future_paths = {
@@ -493,18 +537,8 @@ def calculate_hashes(
             group_results: dict[str, str] = {}
             for future in concurrent.futures.as_completed(future_paths):
                 path = future_paths[future]
-                path_key = relative_path(path)
-                file_hash = future.result()
+                path_key, file_hash = finish_hash(future, path, category)
                 group_results[path_key] = file_hash
-                if verbose:
-                    nonlocal completed
-                    with progress_lock:
-                        completed += 1
-                        print(
-                            f"HASHED [{completed}/{total}] {category} | {path_key} | "
-                            f"{sizes[path]:,} bytes | sha={file_hash}",
-                            flush=True,
-                        )
             return group_results
 
     active_groups = [category for category in ("large", "small") if category in allocated]
@@ -537,12 +571,32 @@ def write_manifest(output_path: Path, payload: dict) -> None:
         raise
 
 
+def positive_worker_count(value: str) -> int:
+    try:
+        worker_count = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("worker count must be a positive integer") from exc
+    if worker_count < 1:
+        raise argparse.ArgumentTypeError("worker count must be at least 1")
+    return worker_count
+
+
 def main(argv: list[str] | None = None) -> int:
     global ROOT
     parser = argparse.ArgumentParser(description="Generate a repository-local files.json document manifest")
     parser.add_argument("--root", default=str(ROOT), help="Repository root to scan (default: directory containing fmtree.py)")
     parser.add_argument("--out", "--output", dest="out", default=None, help="Output path (default: <root>/files.json)")
     parser.add_argument("--quiet", action="store_true", help="Suppress per-file hash completion output")
+    parser.add_argument("--skip-benchmark", action="store_true", help="Skip calibration; use cached settings or safe defaults")
+    parser.add_argument(
+        "--workers",
+        "--hash-workers",
+        dest="workers",
+        type=positive_worker_count,
+        default=None,
+        metavar="N",
+        help="Use exactly N concurrent file-hash workers (bypasses benchmarking and the automatic six-worker cap)",
+    )
     args = parser.parse_args(argv)
 
     ROOT = Path(args.root).expanduser().resolve()
@@ -559,8 +613,20 @@ def main(argv: list[str] | None = None) -> int:
     files: list[Path] = []
     tree_children = scan_tree(ROOT, output_path, files)
     object_format = git_object_format()
-    settings = get_worker_settings(files, object_format, ROOT)
-    hashes = calculate_hashes(files, object_format, settings, verbose=not args.quiet)
+    if args.workers is not None:
+        print(f"Using {args.workers} custom hash worker(s); benchmarking skipped.")
+        settings = DEFAULT_WORKERS.copy()
+    else:
+        settings = get_worker_settings(
+            files, object_format, ROOT, skip_benchmark=args.skip_benchmark
+        )
+    hashes = calculate_hashes(
+        files,
+        object_format,
+        settings,
+        verbose=not args.quiet,
+        worker_count=args.workers,
+    )
 
     def attach_hashes(children: list[dict]) -> None:
         for entry in children:
