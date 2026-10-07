@@ -1,9 +1,11 @@
+import io
 import json
 import os
 import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
@@ -65,6 +67,26 @@ class FmtreeTests(unittest.TestCase):
             expected = subprocess.check_output(["git", "hash-object", str(path)], text=True).strip()
             self.assertEqual(actual[fmtree.relative_path(path)], expected)
 
+    def test_verbose_hashing_reports_each_file_and_hash(self):
+        files = []
+        for name, content in (("first.md", "first"), ("second.md", "second")):
+            path = self.root / name
+            path.write_text(content, encoding="utf-8")
+            files.append(path)
+
+        output = io.StringIO()
+        with redirect_stdout(output):
+            hashes = fmtree.calculate_hashes(files, "sha1", {"small": 2, "large": 1})
+
+        lines = [line for line in output.getvalue().splitlines() if line.startswith("HASHED ")]
+        self.assertEqual(len(lines), len(files))
+        for path in files:
+            expected = subprocess.check_output(["git", "hash-object", str(path)], text=True).strip()
+            self.assertEqual(hashes[fmtree.relative_path(path)], expected)
+            self.assertTrue(any(path.name in line and expected in line for line in lines))
+        self.assertTrue(any("[1/2]" in line for line in lines))
+        self.assertTrue(any("[2/2]" in line for line in lines))
+
     def test_matching_benchmark_cache_is_reused(self):
         settings = {"small": 3, "large": 2}
         cache = {
@@ -118,14 +140,16 @@ class FmtreeTests(unittest.TestCase):
     def test_cli_writes_complete_manifest_once_with_hash_and_mime(self):
         (self.root / "readme.md").write_text("hello", encoding="utf-8")
         output = self.root / "out.json"
-        with mock.patch.object(fmtree, "get_worker_settings", return_value={"small": 1, "large": 1}):
-            self.assertEqual(fmtree.main(["--root", str(self.root), "--out", str(output)]), 0)
+        stdout = io.StringIO()
+        with mock.patch.object(fmtree, "get_worker_settings", return_value={"small": 1, "large": 1}), redirect_stdout(stdout):
+            self.assertEqual(fmtree.main(["--root", str(self.root), "--out", str(output), "--quiet"]), 0)
         payload = json.loads(output.read_text(encoding="utf-8"))
         entry = payload["children"][0]
         self.assertEqual(entry["path"], "readme.md")
         self.assertTrue(entry["sha"])
         self.assertEqual(entry["mime"], "text/markdown")
         self.assertFalse((self.root / "files.json").exists())
+        self.assertNotIn("HASHED ", stdout.getvalue())
 
 
 if __name__ == "__main__":

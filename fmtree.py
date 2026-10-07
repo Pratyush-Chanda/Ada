@@ -14,6 +14,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -464,16 +465,25 @@ def _allocate_workers(groups: dict[str, list[Path]], selected: dict[str, int]) -
     return allocated
 
 
-def calculate_hashes(files: list[Path], object_format: str, settings: dict[str, int]) -> dict[str, str]:
-    """Hash large and small files concurrently, with at most six workers total."""
+def calculate_hashes(
+    files: list[Path],
+    object_format: str,
+    settings: dict[str, int],
+    verbose: bool = True,
+) -> dict[str, str]:
+    """Hash files concurrently and report each completed hash when verbose."""
+    sizes = {path: path.stat().st_size for path in files}
     groups = {
-        "small": [path for path in files if path.stat().st_size <= SMALL_FILE_LIMIT],
-        "large": [path for path in files if path.stat().st_size > SMALL_FILE_LIMIT],
+        "small": [path for path in files if sizes[path] <= SMALL_FILE_LIMIT],
+        "large": [path for path in files if sizes[path] > SMALL_FILE_LIMIT],
     }
     for group in groups.values():
         group.sort(key=lambda path: (-path.stat().st_size, path.as_posix().casefold()))
     allocated = _allocate_workers(groups, settings)
     results: dict[str, str] = {}
+    progress_lock = threading.Lock()
+    completed = 0
+    total = len(files)
 
     def hash_group(category: str) -> dict[str, str]:
         with concurrent.futures.ThreadPoolExecutor(max_workers=allocated[category]) as executor:
@@ -483,7 +493,18 @@ def calculate_hashes(files: list[Path], object_format: str, settings: dict[str, 
             group_results: dict[str, str] = {}
             for future in concurrent.futures.as_completed(future_paths):
                 path = future_paths[future]
-                group_results[relative_path(path)] = future.result()
+                path_key = relative_path(path)
+                file_hash = future.result()
+                group_results[path_key] = file_hash
+                if verbose:
+                    nonlocal completed
+                    with progress_lock:
+                        completed += 1
+                        print(
+                            f"HASHED [{completed}/{total}] {category} | {path_key} | "
+                            f"{sizes[path]:,} bytes | sha={file_hash}",
+                            flush=True,
+                        )
             return group_results
 
     active_groups = [category for category in ("large", "small") if category in allocated]
@@ -521,6 +542,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Generate a repository-local files.json document manifest")
     parser.add_argument("--root", default=str(ROOT), help="Repository root to scan (default: directory containing fmtree.py)")
     parser.add_argument("--out", "--output", dest="out", default=None, help="Output path (default: <root>/files.json)")
+    parser.add_argument("--quiet", action="store_true", help="Suppress per-file hash completion output")
     args = parser.parse_args(argv)
 
     ROOT = Path(args.root).expanduser().resolve()
@@ -538,7 +560,7 @@ def main(argv: list[str] | None = None) -> int:
     tree_children = scan_tree(ROOT, output_path, files)
     object_format = git_object_format()
     settings = get_worker_settings(files, object_format, ROOT)
-    hashes = calculate_hashes(files, object_format, settings)
+    hashes = calculate_hashes(files, object_format, settings, verbose=not args.quiet)
 
     def attach_hashes(children: list[dict]) -> None:
         for entry in children:
