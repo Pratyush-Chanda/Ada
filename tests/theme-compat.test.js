@@ -47,11 +47,18 @@ test("supports exact per-theme selector overrides and reports unknown hashed Dis
   assert.ok(unmatched.warnings.some((warning) => warning.includes("Unmapped Discord selector component")));
 });
 
+test("reports Discord CSS-module class hashes with underscores", () => {
+  const result = translateBetterDiscordTheme(`.appMount__51fd7 .wrapper_ef3116 { color: red; }`);
+  assert.ok(result.warnings.some((warning) => warning.includes(".appMount__51fd7")));
+  assert.ok(result.warnings.some((warning) => warning.includes(".wrapper_ef3116")));
+});
+
 test("preserves keyframe steps and warns that imported styles are not translated", () => {
   const result = translateBetterDiscordTheme(`@import url("https://example.test/theme.css");\n@keyframes pulse { from { opacity: 0; } to { opacity: 1; } }`);
   assert.match(result.css, /@import url\("https:\/\/example\.test\/theme\.css"\)/);
   assert.match(result.css, /@keyframes pulse/);
-  assert.ok(result.warnings.some((warning) => warning.includes("@import was preserved")));
+  assert.deepEqual(result.imports, ["https://example.test/theme.css"]);
+  assert.ok(result.warnings.some((warning) => warning.includes("https://example.test/theme.css") && warning.includes("not analyzed or translated")));
   assert.equal(result.mapVersion, COMPATIBILITY_MAP_VERSION);
 });
 
