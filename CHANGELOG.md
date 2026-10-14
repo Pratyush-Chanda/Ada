@@ -5,6 +5,7 @@
 - Added an in-app theme dashboard with system/light/dark modes, Ada-native CSS themes, local theme import/editing, per-theme selector mappings, and an emergency safe mode.
 - Added a versioned BetterDiscord CSS compatibility translator for selected Discord variables and root selectors, with visible warnings for unsupported selectors and imports.
 - Added browser-side theme persistence, offline caching for theme assets, and JavaScript translation tests in CI.
+- Added a visible “Use this theme” action for imported CSS, separate from optional overlays, and clearer remote `@import` diagnostics that identify the uninspected stylesheet.
 
 ## 0.0.57b_beta.1
 This beta improves repository manifest generation with richer file metadata, adaptive concurrent processing, device-aware calibration, safer output handling, and automated tests/CI integration.

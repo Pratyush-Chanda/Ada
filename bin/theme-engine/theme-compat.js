@@ -2,7 +2,7 @@ const postcss = require("postcss");
 const selectorParser = require("postcss-selector-parser");
 const valueParser = require("postcss-value-parser");
 
-const COMPATIBILITY_MAP_VERSION = "ada-bd-compat-1";
+const COMPATIBILITY_MAP_VERSION = "ada-bd-compat-2";
 
 // This is deliberately a small, explicit first map. Extend it only when a
 // mapping to a real Ada component has been reviewed and covered by a fixture.
@@ -64,7 +64,26 @@ function isDiscordVariable(name) {
 }
 
 function isLikelyHashedDiscordClass(name) {
-  return /-(?=[A-Za-z0-9]{5,}$)(?=[A-Za-z0-9]*[A-Z])(?=[A-Za-z0-9]*\d)[A-Za-z0-9]+$/.test(name);
+  const match = name.match(/[-_]+([A-Za-z0-9]{5,})$/);
+  return Boolean(match && /[A-Za-z]/.test(match[1]) && /\d/.test(match[1]));
+}
+
+function readImportTarget(params) {
+  const parsed = valueParser(String(params || ""));
+  const first = parsed.nodes.find((node) => node.type !== "space" && node.type !== "comment");
+  if (!first) return "";
+  if (first.type === "string") return first.value;
+  if (first.type === "function" && first.value.toLowerCase() === "url") {
+    const value = valueParser.stringify(first.nodes).trim();
+    return value.replace(/^(["'])(.*)\1$/, "$2");
+  }
+  return valueParser.stringify(first).trim();
+}
+
+function importWarning(target) {
+  const label = /^(?:https?:)?\/\//i.test(target) ? "Remote @import" : "Imported stylesheet";
+  const source = target || "(URL could not be parsed)";
+  return `${label} not analyzed or translated: ${source}. Ada preserves @import, so the browser may load it when the theme is enabled; download and import that stylesheet separately to inspect and map its rules.`;
 }
 
 function mapCustomProperties(root, warnings, translated) {
@@ -148,9 +167,13 @@ function translateBetterDiscordTheme(cssText, options = {}) {
     ? options.selectorMap
     : {};
   const root = postcss.parse(source, { from: options.from || undefined });
+  const imports = [];
 
-  root.walkAtRules("import", (rule) => {
-    warnings.add("Remote or local @import was preserved but not translated; imported CSS needs to be available to the translator.");
+  root.walkAtRules((rule) => {
+    if (rule.name.toLowerCase() !== "import") return;
+    const target = readImportTarget(rule.params);
+    imports.push(target);
+    warnings.add(importWarning(target));
   });
 
   root.walkRules((rule) => {
@@ -167,6 +190,7 @@ function translateBetterDiscordTheme(cssText, options = {}) {
   return {
     css: root.toString(),
     metadata,
+    imports,
     mapVersion: COMPATIBILITY_MAP_VERSION,
     warnings: [...warnings],
     translated: {

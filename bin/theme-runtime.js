@@ -7,6 +7,7 @@
   const STORE_NAME = "themes";
   const MODE_KEY = "ada-theme-mode";
   const BUILTIN_KEY = "ada-builtin-theme";
+  const ACTIVE_THEME_KEY = "ada-active-imported-theme";
   const SAFE_KEY = "ada-theme-safe-mode";
   const MAX_THEME_BYTES = 512 * 1024;
   const BUILTIN_THEMES = [
@@ -103,6 +104,15 @@
     return safeMode || readPreference(SAFE_KEY, "0") === "1";
   }
 
+  function activeImportedTheme() {
+    const id = readPreference(ACTIVE_THEME_KEY, "");
+    return id ? installedThemes.find((record) => record.id === id && record.enabled) || null : null;
+  }
+
+  function importOnlyWarnings(warnings) {
+    return (warnings || []).filter((warning) => warning.includes("@import") || warning.includes("Imported stylesheet not analyzed"));
+  }
+
   function showStatus(message, isError = false) {
     const status = document.getElementById("adaThemeStatus");
     if (!status) return;
@@ -128,19 +138,24 @@
     document.querySelectorAll("[data-ada-dynamic-theme]").forEach((element) => element.remove());
     if (safeModeActive()) {
       document.documentElement.dataset.adaBuiltinTheme = "ada-default";
+      document.documentElement.dataset.adaActiveTheme = "";
       showStatus("Safe appearance is on. Imported stylesheets are disabled.");
       return;
     }
 
     const builtinId = readPreference(BUILTIN_KEY, "ada-default");
     const builtin = BUILTIN_THEMES.find((item) => item.id === builtinId) || BUILTIN_THEMES[0];
-    document.documentElement.dataset.adaBuiltinTheme = builtin.id;
+    let activeTheme = activeImportedTheme();
+    const activeId = readPreference(ACTIVE_THEME_KEY, "");
+    if (activeId && !activeTheme) writePreference(ACTIVE_THEME_KEY, "");
+    document.documentElement.dataset.adaBuiltinTheme = activeTheme ? "" : builtin.id;
+    document.documentElement.dataset.adaActiveTheme = activeTheme ? activeTheme.id : "";
     const records = installedThemes
       .filter((record) => record.enabled)
       .sort((a, b) => (a.order || 0) - (b.order || 0) || a.name.localeCompare(b.name));
 
     try {
-      if (builtin.href) {
+      if (!activeTheme && builtin.href) {
         const css = await themeCss(builtin);
         const style = document.createElement("style");
         style.id = "ada-selected-builtin-theme";
@@ -148,7 +163,10 @@
         style.textContent = css;
         document.head.appendChild(style);
       }
-      for (const record of records) {
+      const loadOrder = activeTheme
+        ? [activeTheme, ...records.filter((record) => record.id !== activeTheme.id)]
+        : records;
+      for (const record of loadOrder) {
         const style = document.createElement("style");
         style.id = styleIdFor(record);
         style.dataset.adaDynamicTheme = "imported";
@@ -156,7 +174,10 @@
         style.textContent = record.compiledCss || record.originalCss || "";
         document.head.appendChild(style);
       }
-      showStatus(`${records.length} imported theme${records.length === 1 ? "" : "s"} enabled.`, false);
+      const overlays = records.filter((record) => record.id !== activeTheme?.id).length;
+      showStatus(activeTheme
+        ? `Active custom theme: ${activeTheme.name || activeTheme.fileName}. ${overlays} additional overlay${overlays === 1 ? "" : "s"} enabled.`
+        : `Using ${builtin.name}. ${overlays} imported overlay${overlays === 1 ? "" : "s"} enabled.`, false);
     } catch (error) {
       showStatus(error.message || "A theme stylesheet could not be loaded.", true);
     }
@@ -174,7 +195,8 @@
     const container = document.getElementById("adaBuiltinThemeList");
     if (!container) return;
     container.replaceChildren();
-    const selected = readPreference(BUILTIN_KEY, "ada-default");
+    const activeCustom = activeImportedTheme();
+    const selected = activeCustom ? "" : safeModeActive() ? "ada-default" : readPreference(BUILTIN_KEY, "ada-default");
     for (const theme of BUILTIN_THEMES) {
       const card = makeElement("article", "ada-theme-card");
       card.dataset.adaBuiltinTheme = theme.id;
@@ -182,14 +204,22 @@
       preview.setAttribute("aria-hidden", "true");
       const copy = makeElement("div", "ada-theme-card-copy");
       copy.append(makeElement("strong", "", theme.name), makeElement("p", "", theme.description));
-      const apply = makeElement("button", "ada-theme-action", selected === theme.id ? "Selected" : "Use theme");
+      const isActive = selected === theme.id;
+      const apply = makeElement("button", "ada-theme-action", isActive ? "Active" : "Use theme");
       apply.type = "button";
-      apply.disabled = selected === theme.id;
-      apply.setAttribute("aria-pressed", String(selected === theme.id));
+      apply.disabled = isActive;
+      apply.setAttribute("aria-pressed", String(isActive));
       apply.addEventListener("click", async () => {
+        const previousActive = readPreference(ACTIVE_THEME_KEY, "");
+        const previousRecord = installedThemes.find((record) => record.id === previousActive);
+        if (previousRecord) {
+          previousRecord.enabled = false;
+          await storeRequest("readwrite", previousRecord);
+        }
+        writePreference(ACTIVE_THEME_KEY, "");
         writePreference(BUILTIN_KEY, theme.id);
         await applyThemeSheets();
-        renderBuiltinThemes();
+        renderAll();
       });
       card.append(preview, copy, apply);
       container.appendChild(card);
@@ -217,6 +247,7 @@
     }
 
     for (const record of installedThemes.slice().sort((a, b) => a.name.localeCompare(b.name))) {
+      const active = readPreference(ACTIVE_THEME_KEY, "") === record.id && Boolean(record.enabled);
       const card = makeElement("article", "ada-theme-card ada-installed-theme");
       const header = makeElement("div", "ada-installed-theme-header");
       const copy = makeElement("div", "ada-theme-card-copy");
@@ -224,41 +255,67 @@
       copy.appendChild(makeElement("p", "", [record.author, record.version && `v${record.version}`, record.format === "betterdiscord-css" ? "BetterDiscord translated" : "Ada CSS"].filter(Boolean).join(" · ")));
       if (record.description) copy.appendChild(makeElement("p", "ada-theme-description", record.description));
       header.appendChild(copy);
+      const enabledControl = document.createElement("label");
+      enabledControl.className = "ada-theme-enabled-control";
       const enabled = document.createElement("input");
       enabled.type = "checkbox";
       enabled.checked = Boolean(record.enabled);
       enabled.disabled = safeModeActive();
-      enabled.setAttribute("aria-label", `Enable ${record.name || "theme"}`);
+      enabled.setAttribute("aria-label", active
+        ? `Enable ${record.name || "theme"} as the active custom theme`
+        : `Enable ${record.name || "theme"} as an overlay`);
       enabled.addEventListener("change", async () => {
         record.enabled = enabled.checked;
+        if (!record.enabled && readPreference(ACTIVE_THEME_KEY, "") === record.id) writePreference(ACTIVE_THEME_KEY, "");
         await storeRequest("readwrite", record);
         installedThemes = await storeRequest("readonly");
         await applyThemeSheets();
-        renderInstalledThemes();
+        renderAll();
       });
-      header.appendChild(enabled);
+      enabledControl.append(enabled, makeElement("span", "", active ? "Active stylesheet" : "Enable overlay"));
+      header.appendChild(enabledControl);
       card.appendChild(header);
 
       if (record.translated) {
-        const summary = makeElement("p", "ada-theme-translation-summary", `${record.translated.selectorCount || 0} selector rewrites · ${record.translated.variableCount || 0} variable rewrites · map ${record.mapVersion || "unknown"}`);
+        const importedCount = Array.isArray(record.imports) ? record.imports.length : 0;
+        const summary = makeElement("p", "ada-theme-translation-summary", `${record.translated.selectorCount || 0} selector rewrites · ${record.translated.variableCount || 0} variable rewrites · ${importedCount} imported stylesheet${importedCount === 1 ? "" : "s"} not analyzed · map ${record.mapVersion || "unknown"}`);
         card.appendChild(summary);
       }
       renderWarnings(record, card);
 
       const actions = makeElement("div", "ada-theme-actions");
+      const activate = makeElement("button", `ada-theme-action ${active ? "" : "ada-theme-action--primary"}`, active && safeModeActive() ? "Selected (safe mode)" : active ? "Active custom theme" : "Use this theme");
+      activate.type = "button";
+      activate.disabled = active || safeModeActive();
+      activate.setAttribute("aria-pressed", String(active));
+      activate.addEventListener("click", async () => {
+        const previousId = readPreference(ACTIVE_THEME_KEY, "");
+        const previous = installedThemes.find((theme) => theme.id === previousId && theme.id !== record.id);
+        if (previous) {
+          previous.enabled = false;
+          await storeRequest("readwrite", previous);
+        }
+        record.enabled = true;
+        await storeRequest("readwrite", record);
+        writePreference(ACTIVE_THEME_KEY, record.id);
+        installedThemes = await storeRequest("readonly");
+        await applyThemeSheets();
+        renderAll();
+      });
       const edit = makeElement("button", "ada-theme-action ada-theme-action--secondary", "Edit / map selectors");
       edit.type = "button";
       edit.addEventListener("click", () => openThemeEditor(record.id));
       const remove = makeElement("button", "ada-theme-action ada-theme-action--danger", "Remove");
       remove.type = "button";
       remove.addEventListener("click", async () => {
+        if (readPreference(ACTIVE_THEME_KEY, "") === record.id) writePreference(ACTIVE_THEME_KEY, "");
         await storeRequest("readwrite", { removeId: record.id });
         installedThemes = await storeRequest("readonly");
         await applyThemeSheets();
-        renderInstalledThemes();
+        renderAll();
         showStatus(`${record.name || "Theme"} removed.`);
       });
-      actions.append(edit, remove);
+      actions.append(activate, edit, remove);
       card.appendChild(actions);
       container.appendChild(card);
     }
@@ -275,6 +332,26 @@
   async function refreshThemeList() {
     try {
       installedThemes = await storeRequest("readonly") || [];
+      for (const record of installedThemes) {
+        if (record.mapVersion === compat.COMPATIBILITY_MAP_VERSION && Array.isArray(record.imports)) continue;
+        const analysis = compat.translateBetterDiscordTheme(record.originalCss || "", {
+          selectorMap: record.selectorMap || {},
+          from: record.fileName
+        });
+        record.imports = analysis.imports || [];
+        record.mapVersion = analysis.mapVersion;
+        if (record.format === "betterdiscord-css") {
+          record.compiledCss = analysis.css;
+          record.warnings = analysis.warnings;
+          record.translated = analysis.translated;
+          record.metadata = analysis.metadata;
+        } else {
+          record.compiledCss = record.originalCss || "";
+          record.warnings = importOnlyWarnings(analysis.warnings);
+          record.translated = record.translated || { selectorCount: 0, variableCount: 0 };
+        }
+        await storeRequest("readwrite", record);
+      }
       renderAll();
       await applyThemeSheets();
     } catch (error) {
@@ -351,13 +428,15 @@
     }
 
     try {
+      const analysis = compat.translateBetterDiscordTheme(sourceCss, { selectorMap, from: record.fileName });
       const translated = record.format === "betterdiscord-css"
-        ? compat.translateBetterDiscordTheme(sourceCss, { selectorMap, from: record.fileName })
-        : { css: sourceCss, metadata: compat.parseThemeMetadata(sourceCss), warnings: [], mapVersion: compat.COMPATIBILITY_MAP_VERSION, translated: { selectorCount: 0, variableCount: 0 } };
+        ? analysis
+        : { ...analysis, css: sourceCss, warnings: importOnlyWarnings(analysis.warnings), translated: { selectorCount: 0, variableCount: 0 } };
       record.originalCss = sourceCss;
       record.compiledCss = translated.css;
       record.selectorMap = selectorMap;
       record.warnings = translated.warnings;
+      record.imports = translated.imports;
       record.metadata = translated.metadata;
       record.translated = translated.translated;
       record.mapVersion = translated.mapVersion;
@@ -399,10 +478,11 @@
         originalCss: sourceCss,
         compiledCss: translate ? parsed.css : sourceCss,
         selectorMap: {},
-        warnings: translate ? parsed.warnings : [],
+        warnings: translate ? parsed.warnings : importOnlyWarnings(parsed.warnings),
+        imports: parsed.imports || [],
         translated: translate ? parsed.translated : { selectorCount: 0, variableCount: 0 },
         mapVersion: parsed.mapVersion,
-        enabled: true,
+        enabled: false,
         order: Date.now(),
         installedAt: new Date().toISOString()
       };
@@ -410,7 +490,7 @@
       installedThemes = await storeRequest("readonly");
       await applyThemeSheets();
       renderAll();
-      showStatus(`${record.name} imported. Review the compatibility report and map any unsupported selectors.`);
+      showStatus(`${record.name} imported and left disabled. Choose “Use this theme” to replace the built-in palette, or enable it as an overlay.`);
     } catch (error) {
       showStatus(`Could not import theme: ${error.message}`, true);
     }

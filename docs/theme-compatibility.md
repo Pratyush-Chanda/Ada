@@ -6,8 +6,9 @@ Ada now has a **Themes** dashboard opened from the paint-palette button in the t
 
 - System, light, and dark appearance modes. System mode follows the device preference; the selected mode is applied before the main stylesheet paints.
 - Three Ada-native CSS palettes: Ada Default, Midnight, and High Contrast.
-- Import, enable/disable, edit, and remove controls for CSS theme files.
-- A versioned BetterDiscord compatibility translator, `ada-bd-compat-1`, that parses CSS structurally and reports selectors and variables it cannot map.
+- A visible **Use this theme** action for imported CSS. It makes that custom theme the active base instead of the selected built-in palette. The separate **Enable overlay** toggle layers additional CSS on top.
+- Import, edit, and remove controls for CSS theme files.
+- A versioned BetterDiscord compatibility translator, `ada-bd-compat-2`, that parses CSS structurally and reports selectors and variables it cannot map.
 - An editor for exact, per-theme selector mappings from a Discord selector to an Ada selector.
 - An emergency safe appearance that disables imported stylesheets. It is available at `?ada-theme-safe=1` and with **Ctrl + Alt + Shift + S**.
 
@@ -16,15 +17,15 @@ Imported theme files are kept in the browser's IndexedDB. They are not uploaded 
 ## Importing a theme
 
 1. Open **Themes** and choose a `.theme.css` (or `text/css`) file up to 512 KiB.
-2. Leave **Translate BetterDiscord variables and known Discord selectors** enabled for BetterDiscord-style themes. Turn it off for Ada-native CSS.
+2. Leave **Translate BetterDiscord variables and known Discord selectors** enabled for BetterDiscord-style themes. Turn it off for Ada-native CSS. Newly imported themes stay disabled until you choose **Use this theme** or enable **Enable overlay**.
 3. Inspect each theme's **Compatibility report**. An unmapped Discord class is not silently represented as if it had an Ada equivalent.
 4. Use **Edit / map selectors** to add exact selector translations when a matching Ada component exists. Save to re-parse and re-apply the theme.
 
-CSS rules and ordinary CSS at-rules are preserved, including media queries, keyframes, and font-face rules. The translator changes only mappings it knows. `@import` rules are preserved but are not fetched into the translator or recursively translated; they are reported as a compatibility warning.
+CSS rules and ordinary CSS at-rules are preserved, including media queries, keyframes, and font-face rules. The translator changes only mappings it knows. For each `@import`, the compatibility report shows its URL and explains that Ada preserves the import for the browser but does not inspect or translate the imported stylesheet. To see diagnostics for those rules, download the imported CSS and import it separately. A wrapper theme can therefore show zero rewrites even when its remote stylesheet contains many Discord selectors.
 
 ## Current translation map
 
-The initial mapping version covers selected shared palette variables:
+The current mapping version covers selected shared palette variables:
 
 | Discord variable | Ada variable |
 | --- | --- |
@@ -42,7 +43,7 @@ The initial mapping version covers selected shared palette variables:
 | `--interactive-normal` | `--fg` |
 | `--interactive-hover` | `--accent-hover` |
 
-The initial selector map translates `#app-mount`, `.appMount-2yBXZl`, `.theme-dark`, and `.theme-light` to Ada's app-shell and mode hooks. Discord's hashed class names change and many describe UI that Ada does not have. Other hashed Discord classes are therefore reported until an explicit Ada target is supplied.
+The selector map translates `#app-mount`, `.appMount-2yBXZl`, `.theme-dark`, and `.theme-light` to Ada's app-shell and mode hooks. Discord CSS-module names such as `.appMount__51fd7` and `.wrapper_ef3116` are also detected in imported CSS and reported when unmapped. Many describe UI that Ada does not have; they need an explicit Ada target only when a meaningful counterpart exists.
 
 ## Ada component hooks
 
