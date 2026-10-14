@@ -5,7 +5,7 @@
 //   - GitHub API calls → Network-only (never cache)
 //   - Everything else → Network-first, fall back to cache, fall back to offline page
 
-const CACHE_VERSION = 'webman-v4';
+const CACHE_VERSION = 'webman-v7';
 const OFFLINE_PAGE  = 'offline.html';
 
 const APP_SHELL = [
@@ -15,6 +15,11 @@ const APP_SHELL = [
   'manifest.json',
   'favicon.png',
   'bin/style.css',
+  'bin/theme-compat.js',
+  'bin/theme-runtime.js',
+  'bin/themes/ada-default.theme.css',
+  'bin/themes/ada-midnight.theme.css',
+  'bin/themes/ada-contrast.theme.css',
   'bin/app.js',
   'bin/auth.js',
   'bin/upload.js',

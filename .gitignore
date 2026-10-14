@@ -6,3 +6,4 @@ report.sh
 bench.txt.*.tmp
 __pycache__/
 *.py[cod]
+node_modules/

@@ -38,14 +38,13 @@
 
       /* Initialise Mermaid (startOnLoad:false — we call mermaid.run() manually) */
       if (typeof mermaid !== 'undefined') {
-        var mermaidTheme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'default';
+        var mermaidTheme = document.documentElement.dataset.themeMode === 'dark' ? 'dark' : 'default';
         mermaid.initialize({ startOnLoad: false, theme: mermaidTheme, securityLevel: 'loose' });
-        /* Re-initialise when the OS colour scheme changes at runtime */
-        if (window.matchMedia) {
-          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
-            mermaid.initialize({ startOnLoad: false, theme: e.matches ? 'dark' : 'default', securityLevel: 'loose' });
-          });
-        }
+        /* Ada emits this event for both explicit mode choices and system-mode changes. */
+        window.addEventListener('ada-theme-change', function (event) {
+          var mode = event.detail && event.detail.mode;
+          mermaid.initialize({ startOnLoad: false, theme: mode === 'dark' ? 'dark' : 'default', securityLevel: 'loose' });
+        });
       }
 
       /* Expose the configured instance globally */

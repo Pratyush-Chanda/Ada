@@ -6,14 +6,27 @@
       "type": "file",
       "name": "CHANGELOG.md",
       "path": "CHANGELOG.md",
-      "sha": "e0f860719c42005b1da79d503e050468e14beaea",
+      "sha": "5072abb018bd8295886c53ca5057d9e318706008",
       "mime": "text/markdown"
+    },
+    {
+      "type": "folder",
+      "name": "docs",
+      "children": [
+        {
+          "type": "file",
+          "name": "theme-compatibility.md",
+          "path": "docs/theme-compatibility.md",
+          "sha": "23fa787454b291585f315c2499033ab03c30edc0",
+          "mime": "text/markdown"
+        }
+      ]
     },
     {
       "type": "file",
       "name": "README.md",
       "path": "README.md",
-      "sha": "83a623bc221fa21c8307fdc0f9fd4d7d11084403",
+      "sha": "e645c8eabdedd4dc2bde7c908cea8e9ff2a350ea",
       "mime": "text/markdown"
     },
     {

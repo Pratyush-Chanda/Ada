@@ -260,6 +260,7 @@ function renderFolder(node) {
     const child = children[i];
     const item = document.createElement("div");
     item.className = "file-item";
+    item.setAttribute("data-ada-component", "file-entry");
     item.setAttribute("data-index", i);
     // Fix #4 prep: store child reference so downloadFile can access it directly
     item._childData = child;
@@ -268,12 +269,12 @@ function renderFolder(node) {
     const fileTypeClass = getFileTypeClass(child);
     
     item.innerHTML = `
-      <div class="file-icon" data-type="${fileTypeClass}">${fileIcon}</div>
-      <div class="file-name">${child.name}</div>
-      <div class="file-actions">
+      <div class="file-icon" data-ada-component="file-icon" data-type="${fileTypeClass}">${fileIcon}</div>
+      <div class="file-name" data-ada-component="file-name">${child.name}</div>
+      <div class="file-actions" data-ada-component="file-actions">
         ${child.type === "file" ? `
-          <div class="file-action" onclick="previewFile(event, ${i})">👁️</div>
-          <div class="file-action" onclick="downloadFile(event, ${i})">📥</div>
+          <div class="file-action" data-ada-component="file-action" onclick="previewFile(event, ${i})">👁️</div>
+          <div class="file-action" data-ada-component="file-action" onclick="downloadFile(event, ${i})">📥</div>
           ${isAdmin() ? `<div class="file-action file-action--delete" onclick="deleteFile(event, ${i})" title="Delete file">🗑️</div>` : ''}
         ` : ''}
       </div>
@@ -618,6 +619,7 @@ function openPreview(path, filename) {
   const id = 'preview-' + (++previewId);
   const win = document.createElement("div");
   win.className = "floating-window";
+  win.dataset.adaComponent = "preview-window";
   win.style.top = `${100 + previewId * 10}px`;
   win.style.left = `${100 + previewId * 10}px`;
   win.dataset.id = id;
@@ -627,7 +629,7 @@ function openPreview(path, filename) {
     || ext === 'doc' || ext === 'docx' || ext === 'xls' || ext === 'xlsx' || ext === 'ppt' || ext === 'pptx';
 
   win.innerHTML = `
-    <div class="title-bar" onmousedown="startDrag(event, '${id}')">
+    <div class="title-bar" data-ada-component="window-titlebar" onmousedown="startDrag(event, '${id}')">
       <div class="title">${filename}</div>
       <div class="buttons">
         <button onclick="minimizeWindow('${id}')">🗕</button>
@@ -635,7 +637,7 @@ function openPreview(path, filename) {
         <button onclick="closeWindow('${id}')">✖</button>
       </div>
     </div>
-    <div class="preview-body" id="${id}-body">Loading...</div>
+    <div class="preview-body" data-ada-component="preview-body" id="${id}-body">Loading...</div>
   `;
   previewContainer.appendChild(win);
   windows[id] = win;

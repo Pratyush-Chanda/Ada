@@ -119,6 +119,7 @@ function openPreview(path, filename) {
   const id = 'preview-' + (++previewId);
   const win = document.createElement('div');
   win.className = 'floating-window';
+  win.dataset.adaComponent = 'preview-window';
 
   if (isMobile) {
     win.style.cssText = 'top:0;left:0;width:100vw;height:100vh;border-radius:0;';
@@ -136,11 +137,11 @@ function openPreview(path, filename) {
   const fsBtn  = isMobile ? '' : `<button onclick="toggleFullscreen('${id}')">🗖</button>`;
 
   win.innerHTML = `
-    <div class="title-bar" onmousedown="${isMobile ? '' : `startDrag(event,'${id}')`}">
+    <div class="title-bar" data-ada-component="window-titlebar" onmousedown="${isMobile ? '' : `startDrag(event,'${id}')`}">
       <div class="title">${filename}</div>
       <div class="buttons">${minBtn}${fsBtn}<button onclick="closeWindow('${id}')">✖</button></div>
     </div>
-    <div class="preview-body" id="${id}-body">Loading...</div>`;
+    <div class="preview-body" data-ada-component="preview-body" id="${id}-body">Loading...</div>`;
 
   previewContainer.appendChild(win);
   windows[id] = win;

@@ -7,6 +7,18 @@
   <meta name="recaptcha-sitekey" content="6LcxfwktAAAAAFr3FmBO5LHM3m_j33369aSsOsOf" />
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0f172a">
+  <script>
+    (() => {
+      let preference = 'system';
+      try { preference = localStorage.getItem('ada-theme-mode') || 'system'; } catch (_) {}
+      if (!['system', 'light', 'dark'].includes(preference)) preference = 'system';
+      const mode = preference === 'system'
+        ? ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light')
+        : preference;
+      document.documentElement.dataset.themePreference = preference;
+      document.documentElement.dataset.themeMode = mode;
+    })();
+  </script>
   <link rel="icon" href="favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,10 +50,8 @@
   <link rel="stylesheet" href="bin/tikzjax/css/fonts.css">
   <script src="bin/tikzjax/output/tikzjax.js"></script>
   <!-- highlight.js — syntax highlighting for code blocks -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css"
-        media="(prefers-color-scheme: light)">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css"
-        media="(prefers-color-scheme: dark)">
+  <link id="adaHighlightLight" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css" media="all">
+  <link id="adaHighlightDark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css" media="all" disabled>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
   <!-- Mermaid — diagram / flowchart rendering (```mermaid blocks) -->
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
@@ -391,8 +401,8 @@
     </div>
   </div>
 
-  <div class="window">
-    <div class="toolbar">
+  <div class="window" id="adaAppShell" data-ada-component="app-shell">
+    <div class="toolbar" data-ada-component="toolbar">
       <h1>Ada</h1>
       <!-- Secondary buttons hidden on mobile into overflow menu -->
       <button class="mob-toolbar-overflow" onclick="refreshFiles()" title="Refresh">↻</button>
@@ -400,6 +410,7 @@
       <button class="mob-toolbar-overflow" id="uploadBtnToolbar" onclick="showUploadScreen()" title="Upload file" style="font-size:15px">📤</button>
       <button class="mob-toolbar-overflow" id="adminPanelBtn" onclick="showAdminPanel()" title="Admin panel" style="display:none; font-size:15px">⚙️</button>
       <button class="mob-toolbar-overflow" id="communityBtnToolbar" onclick="openCommunity()" title="Community" style="font-size:15px">💬</button>
+      <button class="mob-toolbar-overflow" id="themeDashboardToolbarBtn" onclick="openThemeDashboard()" title="Themes" aria-label="Open theme dashboard">🎨</button>
       <!-- Always visible on both desktop and mobile -->
       <button id="loginBtnToolbar" onclick="showLoginScreen()" title="Login / Account">🔑 Login</button>
       <!-- Mobile-only overflow toggle -->
@@ -420,14 +431,17 @@
       <button class="mob-overflow-item" onclick="openCommunity();closeMobOverflow()">
         <span class="moi-icon">💬</span> Community
       </button>
+      <button class="mob-overflow-item" onclick="openThemeDashboard();closeMobOverflow()">
+        <span class="moi-icon">🎨</span> Themes
+      </button>
       <button class="mob-overflow-item" id="mobOverflowAdminBtn" style="display:none" onclick="showAdminPanel();closeMobOverflow()">
         <span class="moi-icon">⚙️</span> Admin Panel
       </button>
     </div>
-    <div class="path-nav" id="pathNav">
+    <div class="path-nav" id="pathNav" data-ada-component="path-navigation">
       <span class="path-segment" onclick="goToRoot()">☁️</span>
     </div>
-    <div class="list-view" id="listView"></div>
+    <div class="list-view" id="listView" data-ada-component="file-list"></div>
   </div>
 
   <div class="context-menu" id="contextMenu">
@@ -435,10 +449,10 @@
     <button onclick="handleDownload()"><span class="icon">📥</span>Download</button>
   </div>
 
-  <div class="preview-container" id="previewContainer"></div>
-  <div id="taskbar" style="display: none;"></div>
+  <div class="preview-container" id="previewContainer" data-ada-component="preview-area"></div>
+  <div id="taskbar" data-ada-component="taskbar" style="display: none;"></div>
 
-  <div class="mobile-preview" id="mobilePreview">
+  <div class="mobile-preview" id="mobilePreview" data-ada-component="mobile-preview">
     <div class="content">
       <div class="header">
         <div class="title" id="mobilePreviewTitle">Preview</div>
@@ -449,6 +463,68 @@
   </div>
   
   <div id="status"></div>
+
+  <!-- ===== THEME DASHBOARD ===== -->
+  <div id="adaThemeDashboard" class="full-overlay" role="presentation" aria-hidden="true">
+    <section class="overlay-card overlay-card--wide ada-theme-dashboard" role="dialog" aria-modal="true" aria-labelledby="adaThemeTitle" data-ada-component="theme-dashboard">
+      <button id="adaThemeClose" class="overlay-close" type="button" aria-label="Close theme dashboard">×</button>
+      <div class="ada-theme-dashboard-header">
+        <div>
+          <h2 id="adaThemeTitle">Themes</h2>
+          <p>Choose Ada styles or import BetterDiscord CSS for compatibility translation.</p>
+        </div>
+        <a class="ada-theme-safe-link" href="?ada-theme-safe=1">Open safe appearance</a>
+      </div>
+
+      <section class="ada-theme-section" aria-labelledby="adaThemeModeHeading">
+        <div class="ada-theme-section-heading">
+          <div><h3 id="adaThemeModeHeading">Appearance mode</h3><p>System follows your device unless you choose a mode.</p></div>
+        </div>
+        <div class="ada-theme-mode-controls" role="group" aria-label="Appearance mode">
+          <button type="button" data-ada-theme-mode="system" aria-pressed="false">System</button>
+          <button type="button" data-ada-theme-mode="light" aria-pressed="false">Light</button>
+          <button type="button" data-ada-theme-mode="dark" aria-pressed="false">Dark</button>
+        </div>
+      </section>
+
+      <section class="ada-theme-section" aria-labelledby="adaBuiltinThemeHeading">
+        <div class="ada-theme-section-heading"><div><h3 id="adaBuiltinThemeHeading">Ada themes</h3><p>Built-in styles use the same CSS loader as imported themes.</p></div></div>
+        <div id="adaBuiltinThemeList" class="ada-theme-grid"></div>
+      </section>
+
+      <section class="ada-theme-section" aria-labelledby="adaImportThemeHeading">
+        <div class="ada-theme-section-heading"><div><h3 id="adaImportThemeHeading">Import a theme</h3><p>CSS files are translated against Ada’s known components. Unmapped Discord selectors are reported below.</p></div></div>
+        <label class="ada-theme-import-row">
+          <span class="ada-theme-action ada-theme-action--primary">Choose .theme.css file</span>
+          <input id="adaThemeFileInput" type="file" accept=".theme.css,text/css">
+        </label>
+        <label class="ada-theme-check"><input id="adaThemeTranslateImport" type="checkbox" checked> Translate BetterDiscord variables and known Discord selectors</label>
+        <p class="ada-theme-note">Imported CSS can change the appearance of login and account screens. Only import stylesheets you trust. Maximum size: 512 KiB.</p>
+      </section>
+
+      <section class="ada-theme-section" aria-labelledby="adaInstalledThemeHeading">
+        <div class="ada-theme-section-heading">
+          <div><h3 id="adaInstalledThemeHeading">Installed themes</h3><p>Review translation diagnostics, edit CSS, or add a per-theme selector mapping.</p></div>
+          <button id="adaThemeSafeToggle" class="ada-theme-action ada-theme-action--secondary" type="button">Disable imported CSS</button>
+        </div>
+        <div id="adaInstalledThemeList" class="ada-theme-list"></div>
+      </section>
+
+      <section id="adaThemeEditorPanel" class="ada-theme-editor" hidden aria-labelledby="adaThemeEditorName">
+        <h3 id="adaThemeEditorName">Edit theme</h3>
+        <label for="adaThemeCssEditor">Original CSS</label>
+        <textarea id="adaThemeCssEditor" spellcheck="false" rows="12"></textarea>
+        <label for="adaThemeSelectorMap">Custom selector mappings (JSON object: Discord selector → Ada selector)</label>
+        <textarea id="adaThemeSelectorMap" spellcheck="false" rows="5" placeholder='{".guilds-CLASSHASH": "[data-ada-component=\"file-list\"]"}'></textarea>
+        <div class="ada-theme-actions">
+          <button id="adaThemeEditorSave" class="ada-theme-action ada-theme-action--primary" type="button">Save and translate</button>
+          <button id="adaThemeEditorCancel" class="ada-theme-action ada-theme-action--secondary" type="button">Cancel</button>
+        </div>
+      </section>
+      <p id="adaThemeStatus" class="ada-theme-status" role="status" aria-live="polite">Loading theme settings…</p>
+      <p class="ada-theme-keyboard-note">Emergency safe mode: press Ctrl + Alt + Shift + S to disable imported CSS and reload.</p>
+    </section>
+  </div>
 
   <!-- ===== ADMIN TERMINAL ===== -->
   <div id="terminalOverlay" class="full-overlay" style="display:none">
@@ -478,6 +554,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="bin/gh-proxy.js"></script>
+<script src="bin/theme-compat.js"></script>
+<script src="bin/theme-runtime.js"></script>
 <script src="bin/app.js"></script>
 <script src="bin/markdown.js"></script>
 <div id="updateNotice" style="display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--item); color: var(--fg); padding: 12px 20px; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.2); z-index: 9999; align-items: center; gap: 12px;">
