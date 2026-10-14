@@ -68,6 +68,10 @@ Markdown files are rendered with a full scientific extension stack:
 
 ![Markdown rendering with math, diagrams, and code](placeholder-markdown-rendering.png)
 
+### Theme Dashboard
+
+The Themes dashboard provides explicit system, light, and dark modes, built-in Ada CSS palettes, and browser-local CSS theme imports. BetterDiscord-style CSS is translated against Ada's known component hooks; the dashboard reports unsupported rules and allows per-theme selector mappings rather than silently claiming complete compatibility. See [the theme compatibility guide](docs/theme-compatibility.md).
+
 ### Authentication
 
 A full email + password auth system is built in, backed by Upstash Redis and secured with industry-standard practices.

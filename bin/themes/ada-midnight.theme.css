@@ -1,0 +1,37 @@
+/* Ada-native theme: Midnight. Built-in theme files use the same CSS loader as imports. */
+:root,
+html[data-theme-mode="dark"] {
+  --bg: #080b14;
+  --fg: #e8ecf8;
+  --item: #111827;
+  --hover: #1f2937;
+  --accent: #8b9cff;
+  --accent-hover: #a8b4ff;
+  --accent-subtle: rgba(139, 156, 255, 0.16);
+  --btn-bg: #1a2232;
+  --btn-hover: #28344a;
+  --selected: rgba(139, 156, 255, 0.2);
+  --border: #303a50;
+  --border-subtle: rgba(180, 193, 223, 0.18);
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 14px 42px rgba(0, 0, 0, 0.48);
+}
+
+html[data-theme-mode="light"] {
+  --bg: #f3f5ff;
+  --fg: #1c2340;
+  --item: #ffffff;
+  --hover: #e9edff;
+  --accent: #4f5fd0;
+  --accent-hover: #3c4cb8;
+  --accent-subtle: rgba(79, 95, 208, 0.12);
+  --btn-bg: #e8ebfa;
+  --btn-hover: #dce1f6;
+  --selected: rgba(79, 95, 208, 0.14);
+  --border: #d1d8f0;
+  --border-subtle: rgba(28, 35, 64, 0.1);
+  --shadow: 0 2px 10px rgba(34, 45, 95, 0.08);
+  --shadow-lg: 0 14px 42px rgba(34, 45, 95, 0.14);
+}
