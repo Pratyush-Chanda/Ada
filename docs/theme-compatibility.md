@@ -8,7 +8,7 @@ Ada now has a **Themes** dashboard opened from the paint-palette button in the t
 - Three Ada-native CSS palettes: Ada Default, Midnight, and High Contrast.
 - A visible **Use this theme** action for imported CSS. It makes that custom theme the active base instead of the selected built-in palette. The separate **Enable overlay** toggle layers additional CSS on top.
 - Import, edit, and remove controls for CSS theme files.
-- A versioned BetterDiscord compatibility translator, `ada-bd-compat-2`, that parses CSS structurally and reports selectors and variables it cannot map.
+- A versioned BetterDiscord compatibility translator, `ada-bd-compat-3`, that parses CSS structurally, resolves accessible remote imports, and reports selectors and variables it cannot map.
 - An editor for exact, per-theme selector mappings from a Discord selector to an Ada selector.
 - An emergency safe appearance that disables imported stylesheets. It is available at `?ada-theme-safe=1` and with **Ctrl + Alt + Shift + S**.
 
@@ -21,7 +21,7 @@ Imported theme files are kept in the browser's IndexedDB. They are not uploaded 
 3. Inspect each theme's **Compatibility report**. An unmapped Discord class is not silently represented as if it had an Ada equivalent.
 4. Use **Edit / map selectors** to add exact selector translations when a matching Ada component exists. Save to re-parse and re-apply the theme.
 
-CSS rules and ordinary CSS at-rules are preserved, including media queries, keyframes, and font-face rules. The translator changes only mappings it knows. For each `@import`, the compatibility report shows its URL and explains that Ada preserves the import for the browser but does not inspect or translate the imported stylesheet. To see diagnostics for those rules, download the imported CSS and import it separately. A wrapper theme can therefore show zero rewrites even when its remote stylesheet contains many Discord selectors.
+CSS rules and ordinary CSS at-rules are preserved, including media queries, keyframes, and font-face rules. Plain HTTP(S) `@import` URLs are fetched with CORS and credentials omitted, recursively flattened, and translated when the host permits access. Relative asset URLs in fetched CSS are rebased to that stylesheet's URL. The dashboard reports translated and unresolved import counts. Fetching is bounded to 16 imports, five nested levels, 512 KiB per remote sheet, 2 MiB combined CSS, and an eight-second request timeout. Imports with media/layer/supports qualifiers, CORS or network failures, and imports beyond those limits remain unresolved and are reported; the original import is preserved when possible. In that case, the browser may still load the remote stylesheet, but Discord-only selectors will not affect Ada. You can download that stylesheet and import the combined CSS to get a complete translation report.
 
 ## Current translation map
 
@@ -42,8 +42,12 @@ The current mapping version covers selected shared palette variables:
 | `--text-normal`, `--header-primary`, `--header-secondary` | `--fg` |
 | `--interactive-normal` | `--fg` |
 | `--interactive-hover` | `--accent-hover` |
+| `--main-theme-color` | `--accent` |
+| `--category-hover-color` | `--accent-hover` |
 
-The selector map translates `#app-mount`, `.appMount-2yBXZl`, `.theme-dark`, and `.theme-light` to Ada's app-shell and mode hooks. Discord CSS-module names such as `.appMount__51fd7` and `.wrapper_ef3116` are also detected in imported CSS and reported when unmapped. Many describe UI that Ada does not have; they need an explicit Ada target only when a meaningful counterpart exists.
+Role-specific variables (for mentions, unread dividers, voice channels, and message bars) are reported as unmapped instead of being collapsed into Ada's global accent or text tokens. This avoids unrelated Discord colors overriding Ada's main palette. A source alias that would become a self-referential Ada token is retained as an alias and called out in diagnostics.
+
+The selector map translates `#app-mount`, `.appMount-2yBXZl`, hashed `.appMount__…` root selectors, and hashed `.app__…` main-content selectors to Ada's app-shell and file-list hooks. `.theme-dark` and `.theme-light` map to Ada's mode hooks. Other Discord CSS-module names such as `.wrapper_ef3116` are reported when unmapped; many describe UI Ada does not have and need an explicit Ada target only when a meaningful counterpart exists.
 
 ## Ada component hooks
 

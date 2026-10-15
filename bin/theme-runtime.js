@@ -110,7 +110,7 @@
   }
 
   function importOnlyWarnings(warnings) {
-    return (warnings || []).filter((warning) => warning.includes("@import") || warning.includes("Imported stylesheet not analyzed"));
+    return (warnings || []).filter((warning) => warning.includes("@import") || warning.includes("stylesheet could not be fetched and translated"));
   }
 
   function showStatus(message, isError = false) {
@@ -278,7 +278,9 @@
 
       if (record.translated) {
         const importedCount = Array.isArray(record.imports) ? record.imports.length : 0;
-        const summary = makeElement("p", "ada-theme-translation-summary", `${record.translated.selectorCount || 0} selector rewrites · ${record.translated.variableCount || 0} variable rewrites · ${importedCount} imported stylesheet${importedCount === 1 ? "" : "s"} not analyzed · map ${record.mapVersion || "unknown"}`);
+        const resolvedCount = Array.isArray(record.resolvedImports) ? record.resolvedImports.length : 0;
+        const unresolvedCount = Array.isArray(record.unresolvedImports) ? record.unresolvedImports.length : Math.max(0, importedCount - resolvedCount);
+        const summary = makeElement("p", "ada-theme-translation-summary", `${record.translated.selectorCount || 0} selector rewrites · ${record.translated.variableCount || 0} variable rewrites · ${resolvedCount}/${importedCount} remote imports translated · ${unresolvedCount} unresolved · map ${record.mapVersion || "unknown"}`);
         card.appendChild(summary);
       }
       renderWarnings(record, card);
@@ -333,12 +335,14 @@
     try {
       installedThemes = await storeRequest("readonly") || [];
       for (const record of installedThemes) {
-        if (record.mapVersion === compat.COMPATIBILITY_MAP_VERSION && Array.isArray(record.imports)) continue;
-        const analysis = compat.translateBetterDiscordTheme(record.originalCss || "", {
+        if (record.mapVersion === compat.COMPATIBILITY_MAP_VERSION && Array.isArray(record.imports) && Array.isArray(record.resolvedImports) && Array.isArray(record.unresolvedImports)) continue;
+        const analysis = await compat.translateBetterDiscordThemeWithImports(record.originalCss || "", {
           selectorMap: record.selectorMap || {},
           from: record.fileName
         });
         record.imports = analysis.imports || [];
+        record.resolvedImports = analysis.resolvedImports || [];
+        record.unresolvedImports = analysis.unresolvedImports || [];
         record.mapVersion = analysis.mapVersion;
         if (record.format === "betterdiscord-css") {
           record.compiledCss = analysis.css;
@@ -346,7 +350,7 @@
           record.translated = analysis.translated;
           record.metadata = analysis.metadata;
         } else {
-          record.compiledCss = record.originalCss || "";
+          record.compiledCss = analysis.resolvedCss || record.originalCss || "";
           record.warnings = importOnlyWarnings(analysis.warnings);
           record.translated = record.translated || { selectorCount: 0, variableCount: 0 };
         }
@@ -428,15 +432,17 @@
     }
 
     try {
-      const analysis = compat.translateBetterDiscordTheme(sourceCss, { selectorMap, from: record.fileName });
+      const analysis = await compat.translateBetterDiscordThemeWithImports(sourceCss, { selectorMap, from: record.fileName });
       const translated = record.format === "betterdiscord-css"
         ? analysis
-        : { ...analysis, css: sourceCss, warnings: importOnlyWarnings(analysis.warnings), translated: { selectorCount: 0, variableCount: 0 } };
+        : { ...analysis, css: analysis.resolvedCss || sourceCss, warnings: importOnlyWarnings(analysis.warnings), translated: { selectorCount: 0, variableCount: 0 } };
       record.originalCss = sourceCss;
       record.compiledCss = translated.css;
       record.selectorMap = selectorMap;
       record.warnings = translated.warnings;
       record.imports = translated.imports;
+      record.resolvedImports = translated.resolvedImports || [];
+      record.unresolvedImports = translated.unresolvedImports || [];
       record.metadata = translated.metadata;
       record.translated = translated.translated;
       record.mapVersion = translated.mapVersion;
@@ -465,7 +471,7 @@
     const sourceCss = await file.text();
     const translate = document.getElementById("adaThemeTranslateImport").checked;
     try {
-      const parsed = compat.translateBetterDiscordTheme(sourceCss, { from: file.name });
+      const parsed = await compat.translateBetterDiscordThemeWithImports(sourceCss, { from: file.name });
       const record = {
         id: randomId(),
         fileName: file.name,
@@ -476,10 +482,12 @@
         source: parsed.metadata.source || parsed.metadata.website || "",
         format: translate ? "betterdiscord-css" : "ada-css",
         originalCss: sourceCss,
-        compiledCss: translate ? parsed.css : sourceCss,
+        compiledCss: translate ? parsed.css : parsed.resolvedCss,
         selectorMap: {},
         warnings: translate ? parsed.warnings : importOnlyWarnings(parsed.warnings),
         imports: parsed.imports || [],
+        resolvedImports: parsed.resolvedImports || [],
+        unresolvedImports: parsed.unresolvedImports || [],
         translated: translate ? parsed.translated : { selectorCount: 0, variableCount: 0 },
         mapVersion: parsed.mapVersion,
         enabled: false,

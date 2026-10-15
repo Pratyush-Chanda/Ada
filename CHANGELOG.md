@@ -3,9 +3,10 @@
 - `fmtree.py` now prints each file's completed hash with progress by default; use `--quiet` to suppress per-file output.
 - Added `--skip-benchmark` and `--workers N` (`--hash-workers N`) controls; an explicit worker count bypasses the benchmark and is not capped at six.
 - Added an in-app theme dashboard with system/light/dark modes, Ada-native CSS themes, local theme import/editing, per-theme selector mappings, and an emergency safe mode.
-- Added a versioned BetterDiscord CSS compatibility translator for selected Discord variables and root selectors, with visible warnings for unsupported selectors and imports.
+- Added the `ada-bd-compat-3` BetterDiscord CSS translator for selected Discord variables and root selectors, with visible warnings for unsupported selectors and imports.
 - Added browser-side theme persistence, offline caching for theme assets, and JavaScript translation tests in CI.
 - Added a visible “Use this theme” action for imported CSS, separate from optional overlays, and clearer remote `@import` diagnostics that identify the uninspected stylesheet.
+- CORS-accessible remote imports are now bounded, recursively translated, and URL-rebased; unresolved imports report their specific URL and reason. Role-specific Discord colors stay unmapped, and alias-cycle guards prevent imported accent tokens from falling back to Ada defaults.
 
 ## 0.0.57b_beta.1
 This beta improves repository manifest generation with richer file metadata, adaptive concurrent processing, device-aware calibration, safer output handling, and automated tests/CI integration.
