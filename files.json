@@ -6,7 +6,7 @@
       "type": "file",
       "name": "CHANGELOG.md",
       "path": "CHANGELOG.md",
-      "sha": "e28cf85c41324953f9402b7dbcdab65261aef5f2",
+      "sha": "3a512fd10ff8e4c925591a58c270f412eaf4a412",
       "mime": "text/markdown"
     },
     {
@@ -17,7 +17,7 @@
           "type": "file",
           "name": "theme-compatibility.md",
           "path": "docs/theme-compatibility.md",
-          "sha": "58b56d6bf10bc7c281307f045ee74d9e41762747",
+          "sha": "b686f2cdc698c08e60d3c18cbdaf35febf271758",
           "mime": "text/markdown"
         }
       ]
