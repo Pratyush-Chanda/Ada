@@ -2,7 +2,7 @@ const postcss = require("postcss");
 const selectorParser = require("postcss-selector-parser");
 const valueParser = require("postcss-value-parser");
 
-const COMPATIBILITY_MAP_VERSION = "ada-bd-compat-3";
+const COMPATIBILITY_MAP_VERSION = "ada-bd-compat-4";
 const MAX_REMOTE_IMPORTS = 16;
 const MAX_REMOTE_IMPORT_DEPTH = 5;
 const MAX_REMOTE_IMPORT_BYTES = 512 * 1024;
@@ -14,8 +14,10 @@ const DISCORD_VARIABLE_MAP = Object.freeze({
   "--background-primary": "--bg",
   "--background-secondary": "--item",
   "--background-secondary-alt": "--hover",
+  "--background-base-lowest": "--bg",
+  "--background-base-lower": "--item",
+  "--background-base-low": "--hover",
   "--background-tertiary": "--bg",
-  "--background-accent": "--accent",
   "--background-floating": "--item",
   "--background-modifier-hover": "--hover",
   "--background-modifier-selected": "--selected",
@@ -27,6 +29,11 @@ const DISCORD_VARIABLE_MAP = Object.freeze({
   "--interactive-hover": "--accent-hover",
   "--brand-experiment": "--accent",
   "--brand-experiment-560": "--accent-hover",
+  "--brand-500": "--accent",
+  "--brand-600": "--accent-hover",
+  "--text-default": "--fg",
+  "--text-strong": "--fg",
+  "--text-link": "--accent",
   "--main-theme-color": "--accent",
   "--category-hover-color": "--accent-hover"
 });
@@ -333,6 +340,30 @@ function hashedClassTarget(name) {
   return null;
 }
 
+function normalizeVisualRefreshModeRoot(selector, exactMap, translated) {
+  const nodes = selector.nodes;
+  const modeNodeIndex = nodes.findIndex((node) => node.type === "class" && ["theme-dark", "theme-light"].includes(node.value));
+  const wrapperIndex = nodes.findIndex((node) => node.type === "class" && node.value === "visual-refresh");
+  if (wrapperIndex === -1 || modeNodeIndex < wrapperIndex) return false;
+
+  const prefix = nodes.slice(0, modeNodeIndex + 1);
+  if (nodes.slice(0, wrapperIndex).some((node) => node.type !== "combinator" && node.type !== "comment")) return false;
+  const allowedClasses = new Set(["visual-refresh", "theme-dark", "theme-light"]);
+  if (prefix.some((node) => node.type === "class"
+    ? !allowedClasses.has(node.value)
+    : node.type !== "combinator" && node.type !== "comment")) return false;
+
+  const mode = nodes[modeNodeIndex].value;
+  const target = exactMap[`.${mode}`] || `html[data-theme-mode="${mode === "theme-dark" ? "dark" : "light"}"]`;
+  const source = prefix.map((node) => node.toString()).join("").trim();
+  const remaining = nodes.slice(modeNodeIndex + 1).map((node) => node.clone());
+  selector.removeAll();
+  cloneSelectorNodes(target).forEach((node) => selector.append(node));
+  remaining.forEach((node) => selector.append(node));
+  translated.selectors.push({ from: source, to: target });
+  return true;
+}
+
 function translateSelector(selectorText, customSelectorMap, warnings, translated) {
   const exactMap = { ...DISCORD_SELECTOR_MAP, ...customSelectorMap };
   const parser = selectorParser((selectors) => {
@@ -346,6 +377,7 @@ function translateSelector(selectorText, customSelectorMap, warnings, translated
         return;
       }
 
+      normalizeVisualRefreshModeRoot(selector, exactMap, translated);
       selector.walk((node) => {
         if (node.type !== "class" && node.type !== "id") return;
         const literal = `${node.type === "class" ? "." : "#"}${node.value}`;

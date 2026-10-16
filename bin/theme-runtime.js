@@ -237,6 +237,17 @@
     card.appendChild(details);
   }
 
+  function themeModeRequirement(record) {
+    const selectors = Array.isArray(record?.translated?.selectors) ? record.translated.selectors : [];
+    const modes = new Set();
+    for (const mapping of selectors) {
+      const source = String(mapping?.from || "");
+      if (/\btheme-dark\b/.test(source)) modes.add("dark");
+      if (/\btheme-light\b/.test(source)) modes.add("light");
+    }
+    return modes.size === 1 ? [...modes][0] : "";
+  }
+
   function renderInstalledThemes() {
     const container = document.getElementById("adaInstalledThemeList");
     if (!container) return;
@@ -275,6 +286,13 @@
       enabledControl.append(enabled, makeElement("span", "", active ? "Active stylesheet" : "Enable overlay"));
       header.appendChild(enabledControl);
       card.appendChild(header);
+
+      const requiredMode = themeModeRequirement(record);
+      const currentMode = document.documentElement.dataset.themeMode;
+      if (requiredMode && currentMode && requiredMode !== currentMode) {
+        const modeLabel = requiredMode === "dark" ? "Dark" : "Light";
+        card.appendChild(makeElement("p", "ada-theme-mode-notice", `This theme targets Discord ${requiredMode} mode. Select ${modeLabel} in Appearance mode for those rules to apply.`));
+      }
 
       if (record.translated) {
         const importedCount = Array.isArray(record.imports) ? record.imports.length : 0;
@@ -370,6 +388,7 @@
     modePreference = preference;
     writePreference(MODE_KEY, preference);
     announceThemeChange();
+    renderInstalledThemes();
     showStatus(`Theme mode: ${preference === "system" ? `System (${resolvedMode()})` : preference}.`);
   }
 
@@ -559,7 +578,11 @@
 
     if (window.matchMedia) {
       const media = window.matchMedia("(prefers-color-scheme: dark)");
-      const updateSystemMode = () => { if (modePreference === "system") announceThemeChange(); };
+      const updateSystemMode = () => {
+        if (modePreference !== "system") return;
+        announceThemeChange();
+        renderInstalledThemes();
+      };
       if (media.addEventListener) media.addEventListener("change", updateSystemMode);
       else if (media.addListener) media.addListener(updateSystemMode);
     }

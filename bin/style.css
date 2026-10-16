@@ -2086,6 +2086,7 @@ html[data-theme-mode="light"] .markdown-content pre {
 .ada-theme-enabled-control { display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; color: var(--fg); font: 600 11px var(--font-sans); cursor: pointer; }
 .ada-theme-enabled-control input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
 .ada-theme-translation-summary { margin: 10px 0 0; font: 11px var(--font-mono); opacity: 0.7; }
+.ada-theme-mode-notice { margin: 10px 0 0; padding: 8px 10px; border-left: 3px solid var(--accent); border-radius: 5px; background: var(--item); color: var(--fg); font-size: 12px; line-height: 1.45; }
 .ada-theme-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 
 .ada-theme-action {

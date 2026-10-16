@@ -8,7 +8,7 @@ Ada now has a **Themes** dashboard opened from the paint-palette button in the t
 - Three Ada-native CSS palettes: Ada Default, Midnight, and High Contrast.
 - A visible **Use this theme** action for imported CSS. It makes that custom theme the active base instead of the selected built-in palette. The separate **Enable overlay** toggle layers additional CSS on top.
 - Import, edit, and remove controls for CSS theme files.
-- A versioned BetterDiscord compatibility translator, `ada-bd-compat-3`, that parses CSS structurally, resolves accessible remote imports, and reports selectors and variables it cannot map.
+- A versioned BetterDiscord compatibility translator, `ada-bd-compat-4`, that parses CSS structurally, resolves accessible remote imports, and reports selectors and variables it cannot map.
 - An editor for exact, per-theme selector mappings from a Discord selector to an Ada selector.
 - An emergency safe appearance that disables imported stylesheets. It is available at `?ada-theme-safe=1` and with **Ctrl + Alt + Shift + S**.
 
@@ -18,6 +18,7 @@ Imported theme files are kept in the browser's IndexedDB. They are not uploaded 
 
 1. Open **Themes** and choose a `.theme.css` (or `text/css`) file up to 512 KiB.
 2. Leave **Translate BetterDiscord variables and known Discord selectors** enabled for BetterDiscord-style themes. Turn it off for Ada-native CSS. Newly imported themes stay disabled until you choose **Use this theme** or enable **Enable overlay**.
+   Themes that target only Discord dark or light mode need Ada's matching appearance mode; the dashboard shows a notice when they do not match.
 3. Inspect each theme's **Compatibility report**. An unmapped Discord class is not silently represented as if it had an Ada equivalent.
 4. Use **Edit / map selectors** to add exact selector translations when a matching Ada component exists. Save to re-parse and re-apply the theme.
 
@@ -32,22 +33,23 @@ The current mapping version covers selected shared palette variables:
 | `--background-primary` | `--bg` |
 | `--background-secondary` | `--item` |
 | `--background-secondary-alt` | `--hover` |
+| `--background-base-lowest`, `--background-base-lower`, `--background-base-low` | `--bg`, `--item`, `--hover` |
 | `--background-tertiary` | `--bg` |
-| `--background-accent`, `--brand-experiment` | `--accent` |
-| `--brand-experiment-560` | `--accent-hover` |
+| `--brand-experiment`, `--brand-500`, `--text-link` | `--accent` |
+| `--brand-experiment-560`, `--brand-600` | `--accent-hover` |
 | `--background-floating` | `--item` |
 | `--background-modifier-hover` | `--hover` |
 | `--background-modifier-selected` | `--selected` |
 | `--background-modifier-accent` | `--border` |
-| `--text-normal`, `--header-primary`, `--header-secondary` | `--fg` |
+| `--text-normal`, `--text-default`, `--text-strong`, `--header-primary`, `--header-secondary` | `--fg` |
 | `--interactive-normal` | `--fg` |
 | `--interactive-hover` | `--accent-hover` |
 | `--main-theme-color` | `--accent` |
 | `--category-hover-color` | `--accent-hover` |
 
-Role-specific variables (for mentions, unread dividers, voice channels, and message bars) are reported as unmapped instead of being collapsed into Ada's global accent or text tokens. This avoids unrelated Discord colors overriding Ada's main palette. A source alias that would become a self-referential Ada token is retained as an alias and called out in diagnostics.
+Role-specific variables (for mentions, unread dividers, voice channels, message bars, and Discord's neutral `--background-accent` surface) are reported as unmapped instead of being collapsed into Ada's global accent or text tokens. This avoids unrelated Discord colors overriding Ada's main palette. A source alias that would become a self-referential Ada token is retained as an alias and called out in diagnostics.
 
-The selector map translates `#app-mount`, `.appMount-2yBXZl`, hashed `.appMount__…` root selectors, and hashed `.app__…` main-content selectors to Ada's app-shell and file-list hooks. `.theme-dark` and `.theme-light` map to Ada's mode hooks. Other Discord CSS-module names such as `.wrapper_ef3116` are reported when unmapped; many describe UI Ada does not have and need an explicit Ada target only when a meaningful counterpart exists.
+The selector map translates `#app-mount`, `.appMount-2yBXZl`, hashed `.appMount__…` root selectors, and hashed `.app__…` main-content selectors to Ada's app-shell and file-list hooks. `.theme-dark` and `.theme-light` map to Ada's mode hooks; modern Discord root wrappers such as `.visual-refresh.theme-dark`, `.visual-refresh .theme-dark`, `.visual-refresh.theme-light`, and `.visual-refresh .theme-light` are normalized to Ada's mode root rather than preserved as unmatched wrapper selectors. Other Discord CSS-module names such as `.wrapper_ef3116` are reported when unmapped; many describe UI Ada does not have and need an explicit Ada target only when a meaningful counterpart exists.
 
 ## Ada component hooks
 
@@ -76,7 +78,7 @@ That mapping is a deliberate author choice; Ada cannot infer that every Discord 
 
 ## Compatibility boundaries and safety
 
-This is a **CSS compatibility layer, not a Discord UI emulator**. Colors, font rules, responsive rules, animations, and layout declarations can apply when their selectors target Ada elements. Discord-only widgets or states—such as voice controls, server lists, and chat message states—have no equivalent unless Ada adds one. The dashboard reports unsupported selectors and variables; it does not promise pixel-identical results for arbitrary third-party themes.
+This is a **CSS compatibility layer, not a Discord UI emulator**. Colors, font rules, responsive rules, animations, and layout declarations can apply when their selectors target Ada elements. A theme wallpaper or palette may therefore apply while Discord-only server, channel, member, and chat rules remain unsupported; the dashboard reports those unmatched rules rather than implying the entire theme was ported. Such Discord-only widgets or states have no equivalent unless Ada adds one, so the system does not promise pixel-identical results for arbitrary third-party themes.
 
 Theme CSS does not run JavaScript, but CSS can still restyle the application and can request external resources through mechanisms such as `url(...)` or `@import`. Import stylesheets only from sources you trust. Safe appearance disables imported CSS while leaving the built-in palette available.
 

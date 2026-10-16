@@ -48,6 +48,25 @@ test("rewrites known app-root and dark-mode selectors while preserving media rul
   assert.equal(result.warnings.length, 0);
 });
 
+test("normalizes visual-refresh mode wrappers and maps modern Discord palette variables", () => {
+  const result = translateBetterDiscordTheme(`.visual-refresh.theme-dark, .visual-refresh .theme-dark { --brand-500: #89b4fa; --brand-600: #4085f7; --background-base-lowest: #11111b; --background-base-lower: #181825; --background-base-low: #1c1c2b; --background-accent: #45475a; --text-default: #cdd6f4; --text-strong: #cdd6f4; } .visual-refresh.theme-dark .interactive:hover { color: var(--text-default); }`);
+
+  assert.doesNotMatch(result.css, /\.visual-refresh\s*html|\.visual-refreshhtml/);
+  assert.match(result.css, /html\[data-theme-mode="dark"\]/);
+  assert.match(result.css, /--accent:\s*#89b4fa/);
+  assert.match(result.css, /--accent-hover:\s*#4085f7/);
+  assert.match(result.css, /--bg:\s*#11111b/);
+  assert.match(result.css, /--item:\s*#181825/);
+  assert.match(result.css, /--hover:\s*#1c1c2b/);
+  assert.match(result.css, /--fg:\s*#cdd6f4/);
+  assert.match(result.css, /--background-accent:\s*#45475a/);
+  assert.doesNotMatch(result.css, /--accent:\s*#45475a/);
+  assert.match(result.css, /color:\s*var\(--fg\)/);
+  assert.equal(result.translated.selectorCount, 3);
+  assert.ok(result.warnings.some((warning) => warning.includes("Unmapped Discord variable declaration: --background-accent")));
+  assert.equal(result.mapVersion, COMPATIBILITY_MAP_VERSION);
+});
+
 test("supports exact per-theme selector overrides and reports unknown hashed Discord selectors", () => {
   const result = translateBetterDiscordTheme(`.guilds-2JjMmN .custom { color: red; }`, {
     selectorMap: { ".guilds-2JjMmN .custom": '[data-ada-component="file-list"] .custom' }
