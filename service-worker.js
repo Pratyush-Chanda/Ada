@@ -5,7 +5,7 @@
 //   - GitHub API calls → Network-only (never cache)
 //   - Everything else → Network-first, fall back to cache, fall back to offline page
 
-const CACHE_VERSION = 'webman-v12';
+const CACHE_VERSION = 'webman-v13';
 const OFFLINE_PAGE  = 'offline.html';
 
 const APP_SHELL = [
@@ -14,17 +14,17 @@ const APP_SHELL = [
   'offline.html',
   'manifest.json',
   'favicon.png',
-  'bin/style.css',
+  'bin/style.css?v=13',
   'bin/theme-compat.js',
   'bin/theme-runtime.js',
   'bin/themes/ada-default.theme.css',
   'bin/themes/ada-midnight.theme.css',
   'bin/themes/ada-contrast.theme.css',
-  'bin/file-search.js',
-  'bin/app.js',
+  'bin/file-search.js?v=13',
+  'bin/app.js?v=13',
   'bin/auth.js',
   'bin/upload.js',
-  'bin/mobile.js',
+  'bin/mobile.js?v=13',
   'bin/markdown.js',
   'bin/md-init.js',
   'bin/obsidian-markdown-it.js',
@@ -42,6 +42,8 @@ const APP_SHELL = [
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
 ];
+
+const APP_SHELL_URLS = new Set(APP_SHELL.map(path => new URL(path, self.registration.scope).href));
 
 // Headers required for SharedArrayBuffer (used by tikzjax's WASM TeX engine).
 // Without COOP + COEP the browser withholds SharedArrayBuffer and the TeX
@@ -125,7 +127,7 @@ self.addEventListener('fetch', event => {
   }
 
   // 4. App shell assets → cache first + background update
-  if (APP_SHELL.includes(request.url) || APP_SHELL.includes(url.pathname.replace(/^\//, ''))) {
+  if (APP_SHELL_URLS.has(request.url) || APP_SHELL.includes(url.pathname.replace(/^\//, ''))) {
     event.respondWith(
       caches.match(request).then(cached => {
         const networkFetch = fetch(request).then(res => {
