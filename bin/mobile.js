@@ -155,7 +155,10 @@ function openPreview(path, filename) {
 
 // ===== OVERRIDE handlePreview — always use openPreview (handles mobile internally) =====
 function handlePreview() {
-  if (selected && selected.type === 'file') openPreview(selected.path, selected.name);
+  if (selected && selected.type === 'file') {
+    recordRecentFile(selected.path, selected.name);
+    openPreview(selected.path, selected.name);
+  }
   contextMenu.style.display = 'none';
 }
 

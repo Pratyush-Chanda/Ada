@@ -84,7 +84,8 @@
         <div class="guide-step"><div class="guide-step-icon">🖱️</div><div class="guide-step-text"><strong>Right-click for options</strong><span>Right-click any file for Preview or Download options</span></div></div>
         <div class="guide-step"><div class="guide-step-icon">⠿</div><div class="guide-step-text"><strong>Drag windows freely</strong><span>Hold and drag the title bar to reposition any window</span></div></div>
         <div class="guide-step"><div class="guide-step-icon">🗕</div><div class="guide-step-text"><strong>Minimise to taskbar</strong><span>Click 🗕 to minimise — windows appear in the scrollable bottom bar</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon">📂</div><div class="guide-step-text"><strong>Navigate folders</strong><span>Click a folder to open it, use ↑ or the breadcrumb to go back</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon">🔎</div><div class="guide-step-text"><strong>Find files quickly</strong><span>Search file and folder names across Ada; press Ctrl+K or ⌘K to jump to search</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon">📂</div><div class="guide-step-text"><strong>Navigate folders</strong><span>Click a folder to open it, use ↑ or the breadcrumb to move around</span></div></div>
         <div class="guide-step"><div class="guide-step-icon">📤</div><div class="guide-step-text"><strong>Upload files</strong><span>Click 📤 in the toolbar to upload a file for admin review</span></div></div>
         <div class="guide-step"><div class="guide-step-icon">🔑</div><div class="guide-step-text"><strong>Admin access</strong><span>Click 🔑 Login in the toolbar to enter your access code</span></div></div>
       </div>
@@ -92,7 +93,8 @@
         <div class="guide-step"><div class="guide-step-icon">👆</div><div class="guide-step-text"><strong>Tap to open files</strong><span>Tap any file to open a full-screen preview</span></div></div>
         <div class="guide-step"><div class="guide-step-icon">🗕</div><div class="guide-step-text"><strong>Minimise to corner button</strong><span>Tap 🗕 to minimise — a floating button appears at the bottom-right</span></div></div>
         <div class="guide-step"><div class="guide-step-icon">🔄</div><div class="guide-step-text"><strong>Switch between open files</strong><span>Tap a minimised button to restore it; any open file auto-minimises</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon">📂</div><div class="guide-step-text"><strong>Navigate folders</strong><span>Tap a folder to open, use ↑ or the breadcrumb to go back</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon">🔎</div><div class="guide-step-text"><strong>Find files quickly</strong><span>Search file and folder names across Ada</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon">📂</div><div class="guide-step-text"><strong>Navigate folders</strong><span>Tap a folder to open, use ↑ or the breadcrumb to move around</span></div></div>
         <div class="guide-step"><div class="guide-step-icon">📤</div><div class="guide-step-text"><strong>Upload files</strong><span>Tap 📤 in the toolbar to submit a file for review</span></div></div>
         <div class="guide-step"><div class="guide-step-icon">🔑</div><div class="guide-step-text"><strong>Admin access</strong><span>Tap 🔑 Login to enter your admin access code</span></div></div>
       </div>
@@ -404,9 +406,17 @@
   <div class="window" id="adaAppShell" data-ada-component="app-shell">
     <div class="toolbar" data-ada-component="toolbar">
       <h1>Ada</h1>
+      <div class="toolbar-search" role="search">
+        <label class="visually-hidden" for="fileSearchInput">Search all files and folders</label>
+        <span class="toolbar-search-icon" aria-hidden="true">⌕</span>
+        <input id="fileSearchInput" type="search" placeholder="Search files and folders" autocomplete="off" spellcheck="false" aria-keyshortcuts="Control+K Meta+K" aria-controls="listView">
+        <kbd class="toolbar-search-shortcut" aria-hidden="true">Ctrl K</kbd>
+        <button id="clearFileSearch" type="button" aria-label="Clear search" title="Clear search" hidden>×</button>
+      </div>
       <!-- Secondary buttons hidden on mobile into overflow menu -->
+      <button class="mob-toolbar-overflow" id="recentFilesToggle" type="button" onclick="toggleRecentFiles()" title="Recently opened files" aria-controls="listView" aria-expanded="false">◷ Recent</button>
       <button class="mob-toolbar-overflow" onclick="refreshFiles()" title="Refresh">↻</button>
-      <button class="mob-toolbar-overflow" onclick="goUp()" title="Go up">↑</button>
+      <button class="mob-toolbar-overflow" onclick="goUp()" title="Go up" aria-label="Go to parent folder">↑</button>
       <button class="mob-toolbar-overflow" id="uploadBtnToolbar" onclick="showUploadScreen()" title="Upload file" style="font-size:15px">📤</button>
       <button class="mob-toolbar-overflow" id="adminPanelBtn" onclick="showAdminPanel()" title="Admin panel" style="display:none; font-size:15px">⚙️</button>
       <button class="mob-toolbar-overflow" id="communityBtnToolbar" onclick="openCommunity()" title="Community" style="font-size:15px">💬</button>
@@ -424,6 +434,9 @@
       <button class="mob-overflow-item" onclick="goUp();closeMobOverflow()">
         <span class="moi-icon">↑</span> Go Up
       </button>
+      <button class="mob-overflow-item" onclick="toggleRecentFiles();closeMobOverflow()">
+        <span class="moi-icon">◷</span> Recently Opened
+      </button>
       <button class="mob-overflow-item" onclick="showUploadScreen();closeMobOverflow()">
         <span class="moi-icon">📤</span> Upload File
       </button>
@@ -439,7 +452,7 @@
       </button>
     </div>
     <div class="path-nav" id="pathNav" data-ada-component="path-navigation">
-      <span class="path-segment" onclick="goToRoot()">☁️</span>
+      <button class="path-segment path-crumb-button" type="button" onclick="goToRoot()" aria-label="Go to Ada root" title="Ada root">☁️</button>
     </div>
     <div class="list-view" id="listView" data-ada-component="file-list"></div>
   </div>
@@ -556,6 +569,7 @@
 <script src="bin/gh-proxy.js"></script>
 <script src="bin/theme-compat.js"></script>
 <script src="bin/theme-runtime.js"></script>
+<script src="bin/file-search.js"></script>
 <script src="bin/app.js"></script>
 <script src="bin/markdown.js"></script>
 <div id="updateNotice" style="display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--item); color: var(--fg); padding: 12px 20px; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.2); z-index: 9999; align-items: center; gap: 12px;">

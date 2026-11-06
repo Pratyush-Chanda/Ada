@@ -8,9 +8,20 @@ const mobilePreviewContent = document.getElementById("mobilePreviewContent");
 const mobilePreviewTitle = document.getElementById("mobilePreviewTitle");
 const taskbar = document.getElementById("taskbar");
 const statusEl = document.getElementById("status");
+const fileSearchInput = document.getElementById("fileSearchInput");
+const clearFileSearchButton = document.getElementById("clearFileSearch");
+const fileSearchShortcut = document.querySelector(".toolbar-search-shortcut");
+if (fileSearchShortcut && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) {
+  fileSearchShortcut.textContent = "⌘ K";
+}
 
 let currentNode = null;
+let rootNode = null;
+let fileSearchIndex = [];
 let pathHistory = [];
+let recentFilesOpen = false;
+const RECENT_FILES_STORAGE_KEY = "ada-recent-files-v1";
+const MAX_RECENT_FILES = 8;
 let selected = null;
 let previewId = 0;
 const windows = {};
@@ -137,6 +148,10 @@ async function fetchTree() {
       console.warn("Failed to fetch initial commit:", e);
     }
 
+    rootNode = tree;
+    fileSearchIndex = window.AdaFileSearch.buildIndex(tree, {
+      excludedRootFiles: EXCLUDED_ROOT_FILES
+    });
     currentNode = tree;
     pathHistory = [];
     renderFolder(tree);
@@ -222,8 +237,265 @@ function getFileTypeClass(file) {
   return ext; // returns 'py', 'html', 'css', etc.
 }
 
+function updateSearchClearButton() {
+  if (clearFileSearchButton) clearFileSearchButton.hidden = !fileSearchInput.value;
+}
+
+function clearFileSearch(restoreFolder = true) {
+  if (!fileSearchInput) return;
+  fileSearchInput.value = "";
+  updateSearchClearButton();
+  if (restoreFolder && currentNode) renderFolder(currentNode);
+}
+
+function setRecentFilesOpen(isOpen) {
+  recentFilesOpen = isOpen;
+  const toggle = document.getElementById("recentFilesToggle");
+  if (toggle) toggle.setAttribute("aria-expanded", String(isOpen));
+}
+
+function readRecentFiles() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(RECENT_FILES_STORAGE_KEY) || "[]");
+    return Array.isArray(stored)
+      ? stored.filter((item) => item && typeof item.path === "string" && typeof item.name === "string")
+        .slice(0, MAX_RECENT_FILES)
+      : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function recordRecentFile(path, name) {
+  if (!path || !name) return;
+  const recent = readRecentFiles().filter((item) => item.path !== path);
+  recent.unshift({ path, name, openedAt: Date.now() });
+  try {
+    localStorage.setItem(RECENT_FILES_STORAGE_KEY, JSON.stringify(recent.slice(0, MAX_RECENT_FILES)));
+  } catch (_) {
+    // Recent navigation is optional; private browsing or storage limits should not block previews.
+  }
+}
+
+function toggleRecentFiles() {
+  if (recentFilesOpen) {
+    setRecentFilesOpen(false);
+    if (currentNode) renderFolder(currentNode);
+    return;
+  }
+  clearFileSearch(false);
+  setRecentFilesOpen(true);
+  renderRecentFiles();
+}
+
+function renderRecentFiles() {
+  const saved = readRecentFiles();
+  const entries = saved.map((recent) => ({
+    recent,
+    result: fileSearchIndex.find((entry) => entry.node.type === "file" && entry.node.path === recent.path)
+  })).filter((item) => item.result);
+
+  if (entries.length !== saved.length) {
+    try {
+      localStorage.setItem(RECENT_FILES_STORAGE_KEY, JSON.stringify(entries.map((item) => item.recent)));
+    } catch (_) {}
+  }
+
+  listView.replaceChildren();
+  selected = null;
+  const summary = document.createElement("div");
+  summary.className = "search-results-meta";
+  summary.setAttribute("role", "status");
+  summary.textContent = entries.length
+    ? `Recently opened · ${entries.length} ${entries.length === 1 ? "file" : "files"}`
+    : "Recently opened · no files yet";
+  listView.appendChild(summary);
+
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state search-empty-state";
+    empty.innerHTML = '<div class="icon" aria-hidden="true">◷</div><h3>No recent files</h3><p>Files you preview will appear here for quick access on this device.</p>';
+    listView.appendChild(empty);
+    return;
+  }
+
+  for (const { recent, result } of entries) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "search-result";
+    button.setAttribute("aria-label", `Open recently viewed file ${result.node.name}, ${result.path}`);
+
+    const icon = document.createElement("span");
+    icon.className = "search-result-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = getFileIcon(result.node);
+
+    const copy = document.createElement("span");
+    copy.className = "search-result-copy";
+    const name = document.createElement("span");
+    name.className = "search-result-name";
+    name.textContent = result.node.name || recent.name;
+    const path = document.createElement("span");
+    path.className = "search-result-path";
+    path.textContent = result.path;
+    copy.append(name, path);
+
+    const kind = document.createElement("span");
+    kind.className = "search-result-kind";
+    kind.textContent = "Recent";
+    button.append(icon, copy, kind);
+    button.addEventListener("click", () => openSearchResult(result));
+    listView.appendChild(button);
+  }
+}
+
+function renderSearchResults() {
+  const query = fileSearchInput.value.trim();
+  const { items, total } = window.AdaFileSearch.search(fileSearchIndex, query, 100);
+  listView.replaceChildren();
+  selected = null;
+
+  const summary = document.createElement("div");
+  summary.className = "search-results-meta";
+  summary.setAttribute("role", "status");
+  summary.setAttribute("aria-live", "polite");
+  summary.textContent = total === 0
+    ? `No matches for “${query}”`
+    : `${total} ${total === 1 ? "match" : "matches"}${total > items.length ? ` · showing first ${items.length}` : ""}`;
+  listView.appendChild(summary);
+
+  if (items.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state search-empty-state";
+    empty.innerHTML = '<div class="icon" aria-hidden="true">🔎</div><h3>No matching files or folders</h3><p>Try a shorter name or a word from the folder path.</p>';
+    listView.appendChild(empty);
+    return;
+  }
+
+  for (const result of items) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "search-result";
+    button.setAttribute("aria-label", `${result.node.type}: ${result.node.name}, ${result.path}`);
+
+    const icon = document.createElement("span");
+    icon.className = "search-result-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = getFileIcon(result.node);
+
+    const copy = document.createElement("span");
+    copy.className = "search-result-copy";
+    const name = document.createElement("span");
+    name.className = "search-result-name";
+    name.textContent = result.node.name;
+    const path = document.createElement("span");
+    path.className = "search-result-path";
+    path.textContent = result.path;
+    copy.append(name, path);
+
+    const kind = document.createElement("span");
+    kind.className = "search-result-kind";
+    kind.textContent = result.node.type === "folder" ? "Folder" : "File";
+    button.append(icon, copy, kind);
+    button.addEventListener("click", () => openSearchResult(result));
+    listView.appendChild(button);
+  }
+}
+
+function openSearchResult(result) {
+  const isFolder = result.node.type === "folder";
+  currentNode = isFolder ? result.node : result.parent;
+  pathHistory = isFolder ? [...result.ancestors] : result.ancestors.slice(0, -1);
+  clearFileSearch(false);
+  renderFolder(currentNode);
+  updatePathNav();
+
+  if (!isFolder) {
+    const row = [...listView.querySelectorAll(".file-item")]
+      .find((item) => item._childData === result.node);
+    if (row) {
+      row.classList.add("selected");
+      selected = result.node;
+      handlePreview();
+    }
+  }
+}
+
+function focusFileSearch() {
+  fileSearchInput?.focus();
+  fileSearchInput?.select();
+}
+
+fileSearchInput?.addEventListener("input", () => {
+  setRecentFilesOpen(false);
+  updateSearchClearButton();
+  if (fileSearchInput.value.trim()) renderSearchResults();
+  else if (currentNode) renderFolder(currentNode);
+});
+
+fileSearchInput?.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    if (fileSearchInput.value) {
+      clearFileSearch();
+      event.preventDefault();
+    }
+  } else if (event.key === "ArrowDown") {
+    listView.querySelector(".search-result")?.focus();
+    event.preventDefault();
+  } else if (event.key === "Enter") {
+    listView.querySelector(".search-result")?.click();
+    event.preventDefault();
+  }
+});
+
+listView.addEventListener("keydown", (event) => {
+  if (!(event.target instanceof Element)) return;
+  const results = [...listView.querySelectorAll(".search-result")];
+  const index = results.indexOf(event.target.closest(".search-result"));
+  if (index < 0) return;
+
+  if (event.key === "ArrowDown") {
+    results[Math.min(index + 1, results.length - 1)]?.focus();
+    event.preventDefault();
+  } else if (event.key === "ArrowUp") {
+    if (index === 0) fileSearchInput?.focus();
+    else results[index - 1]?.focus();
+    event.preventDefault();
+  }
+});
+
+clearFileSearchButton?.addEventListener("click", () => {
+  clearFileSearch();
+  focusFileSearch();
+});
+
+document.addEventListener("keydown", (event) => {
+  const target = event.target;
+  const isEditable = target instanceof HTMLElement
+    && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k" && (!isEditable || target === fileSearchInput)) {
+    event.preventDefault();
+    focusFileSearch();
+  } else if (event.key === "Escape" && fileSearchInput?.value && target !== fileSearchInput) {
+    clearFileSearch();
+  } else if (event.key === "Escape" && recentFilesOpen) {
+    setRecentFilesOpen(false);
+    if (currentNode) renderFolder(currentNode);
+    event.preventDefault();
+  } else if (event.key === "/" && !isEditable && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    event.preventDefault();
+    focusFileSearch();
+  }
+});
+
 
 function renderFolder(node) {
+  if (!node) return;
+  setRecentFilesOpen(false);
+  if (fileSearchInput?.value.trim()) {
+    renderSearchResults();
+    return;
+  }
   listView.innerHTML = "";
   selected = null;
   
@@ -349,40 +621,57 @@ function startDrag(e, id) {
 }
 
 function updatePathNav() {
-  const allSegments = []; // build full list first
+  pathNav.replaceChildren();
+  pathNav.setAttribute("aria-label", "Folder path");
 
-  // Build full path segment list
-  for (let i = 0; i < pathHistory.length; i++) {
-    allSegments.push({ name: pathHistory[i].name, action: `goToPath(${i})` });
-  }
-  if (currentNode && currentNode !== pathHistory[pathHistory.length - 1]) {
-    allSegments.push({ name: currentNode.name, action: null }); // current — not clickable
-  }
+  const addSeparator = () => {
+    const separator = document.createElement("span");
+    separator.className = "path-separator";
+    separator.setAttribute("aria-hidden", "true");
+    separator.textContent = "/";
+    pathNav.appendChild(separator);
+  };
 
-  // On mobile truncate to last 2 segments with a … prefix
-  const maxVisible = isMobile ? 2 : Infinity;
-  const truncated = allSegments.length > maxVisible;
-  const visible = truncated ? allSegments.slice(-maxVisible) : allSegments;
+  const rootButton = document.createElement("button");
+  rootButton.type = "button";
+  rootButton.className = "path-segment path-crumb-button";
+  rootButton.setAttribute("aria-label", "Go to Ada root");
+  rootButton.title = "Ada root";
+  rootButton.textContent = "☁️";
+  rootButton.addEventListener("click", goToRoot);
+  pathNav.appendChild(rootButton);
 
-  let html = `<span class="path-segment" onclick="goToRoot()">☁️</span>`;
-  if (truncated) {
-    html += `<span class="path-separator">/</span><span class="path-crumb-ellipsis">…</span>`;
-  }
-  visible.forEach(seg => {
-    html += `<span class="path-separator">/</span>`;
-    html += seg.action
-      ? `<span class="path-segment" onclick="${seg.action}">${seg.name}</span>`
-      : `<span class="path-segment">${seg.name}</span>`;
+  pathHistory.forEach((node, index) => {
+    addSeparator();
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "path-segment path-crumb-button";
+    button.textContent = node.name;
+    button.setAttribute("aria-label", `Open folder ${node.name}`);
+    button.addEventListener("click", () => goToPath(index));
+    pathNav.appendChild(button);
   });
 
-  pathNav.innerHTML = html;
+  if (currentNode) {
+    addSeparator();
+    const current = document.createElement("span");
+    current.className = "path-segment path-crumb-current";
+    current.setAttribute("aria-current", "page");
+    current.textContent = currentNode.name;
+    pathNav.appendChild(current);
+  }
+
+  requestAnimationFrame(() => { pathNav.scrollLeft = pathNav.scrollWidth; });
 }
 
 function goToRoot() {
-  fetchTree(); // Refresh and go to root
+  clearFileSearch(false);
+  fetchTree();
 }
 
 function goToPath(index) {
+  if (index < 0 || index >= pathHistory.length) return;
+  clearFileSearch(false);
   currentNode = pathHistory[index];
   pathHistory = pathHistory.slice(0, index);
   renderFolder(currentNode);
@@ -391,6 +680,7 @@ function goToPath(index) {
 
 function goUp() {
   if (pathHistory.length > 0) {
+    clearFileSearch(false);
     currentNode = pathHistory.pop();
     renderFolder(currentNode);
     updatePathNav();
@@ -586,6 +876,7 @@ function showContextMenu(x, y) {
 
 function handlePreview() {
   if (selected && selected.type === "file") {
+    recordRecentFile(selected.path, selected.name);
     isMobile
       ? openMobilePreview(selected.path, selected.name)
       : openPreview(selected.path, selected.name);
@@ -809,8 +1100,9 @@ function escapeHTML(s) {
 
 document.addEventListener("click", (e) => {
   const isItem = e.target.closest(".file-item");
+  const isSearchResult = e.target.closest(".search-result");
   const isContext = e.target.closest(".context-menu");
-  if (!isItem && !isContext) {
+  if (!isItem && !isSearchResult && !isContext) {
     document.querySelectorAll('.file-item.selected').forEach(el => el.classList.remove('selected'));
     selected = null;
     contextMenu.style.display = "none";
