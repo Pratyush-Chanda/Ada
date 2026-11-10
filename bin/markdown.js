@@ -14,6 +14,24 @@
     return window.md.render(parsed.content);
   }
 
+  async function initMarkdownPDFEmbeds(container) {
+    const embeds = [...container.querySelectorAll('.ada-pdf-embed[data-pdf-src]')];
+    await Promise.all(embeds.map(async (embed) => {
+      try {
+        if (!window.AdaPdfViewer) throw new Error('Ada’s PDF.js viewer did not load');
+        const response = await fetch(fetchUrl(embed.dataset.pdfSrc));
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const requestedPage = Number.parseInt(embed.dataset.pdfPage, 10);
+        await window.AdaPdfViewer.render(embed, await response.arrayBuffer(), {
+          initialPage: Number.isInteger(requestedPage) ? requestedPage : 1,
+        });
+      } catch (error) {
+        embed.textContent = `Could not load embedded PDF: ${error.message}`;
+        embed.setAttribute('role', 'alert');
+      }
+    }));
+  }
+
   /**
    * Activate all post-render Obsidian features scoped to a specific DOM element.
    * Must be called AFTER the rendered HTML has been inserted into the DOM.
@@ -43,6 +61,7 @@
     if (typeof window.obsidianInitHighlight === 'function') {
       window.obsidianInitHighlight(container);
     }
+    await initMarkdownPDFEmbeds(container);
   }
   
 let lastCommit = null;	

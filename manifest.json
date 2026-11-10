@@ -3,8 +3,8 @@
   "short_name": "Ada",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#f8f9fa",
+  "theme_color": "#f8f9fa",
   "icons": [
     {
       "src": "favicon.png",

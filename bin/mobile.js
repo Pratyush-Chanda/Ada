@@ -1,9 +1,12 @@
 // ===== MOBILE OVERFLOW MENU =====
 function toggleMobOverflow() {
-  document.getElementById('mobOverflowMenu').classList.toggle('open');
+  const menu = document.getElementById('mobOverflowMenu');
+  const isOpen = menu.classList.toggle('open');
+  document.getElementById('mobOverflowBtn')?.setAttribute('aria-expanded', String(isOpen));
 }
 function closeMobOverflow() {
   document.getElementById('mobOverflowMenu').classList.remove('open');
+  document.getElementById('mobOverflowBtn')?.setAttribute('aria-expanded', 'false');
 }
 // Close overflow menu on outside tap
 document.addEventListener('click', e => {
@@ -67,6 +70,7 @@ function minimizeWindowMobile(id) {
   w.style.display = 'none';
   mobileMin[id] = { name: w.querySelector('.title')?.textContent || 'File' };
   renderMobileMinStack();
+  syncWorkspaceEmptyState();
 }
 
 function restoreWindowMobile(id) {
@@ -80,6 +84,7 @@ function restoreWindowMobile(id) {
   const w = windows[id];
   if (w) { w.style.display = 'flex'; delete mobileMin[id]; }
   renderMobileMinStack();
+  syncWorkspaceEmptyState();
 }
 
 function renderMobileMinStack() {
@@ -95,10 +100,10 @@ function renderMobileMinStack() {
   stack.style.display = 'flex';
   // Update badge count on hamburger button
   const btn = document.getElementById('mobHamburgerBtn');
-  btn.textContent = entries.length > 0 ? `☰ ${entries.length}` : '☰';
+  btn.innerHTML = `${featherSvg("menu")}<span class="mobile-min-count">${entries.length}</span>`;
   // Rebuild dropdown items
   dropdown.innerHTML = entries.map(([id, info]) =>
-    `<button class="mob-min-btn" onclick="restoreWindowMobile('${id}')">📄 <span>${info.name}</span></button>`
+    `<button class="mob-min-btn" onclick="restoreWindowMobile('${id}')">${featherSvg("file-text")} <span>${info.name}</span></button>`
   ).join('');
 }
 
@@ -122,7 +127,7 @@ function openPreview(path, filename) {
   win.dataset.adaComponent = 'preview-window';
 
   if (isMobile) {
-    win.style.cssText = 'top:0;left:0;width:100vw;height:100vh;border-radius:0;';
+    win.style.cssText = 'top:var(--topbar-height);left:0;width:100vw;height:calc(100dvh - var(--topbar-height));border-radius:0;';
   } else {
     win.style.top  = `${100 + previewId * 10}px`;
     win.style.left = `${100 + previewId * 10}px`;
@@ -132,19 +137,21 @@ function openPreview(path, filename) {
   const ext = filename.split('.').pop().toLowerCase();
 
   const minBtn = isMobile
-    ? `<button onclick="minimizeWindowMobile('${id}')">🗕</button>`
-    : `<button onclick="minimizeWindow('${id}')">🗕</button>`;
-  const fsBtn  = isMobile ? '' : `<button onclick="toggleFullscreen('${id}')">🗖</button>`;
+    ? `<button type="button" onclick="minimizeWindowMobile('${id}')" aria-label="Minimize window" title="Minimize">${featherSvg("minus")}</button>`
+    : `<button type="button" onclick="minimizeWindow('${id}')" aria-label="Minimize window" title="Minimize">${featherSvg("minus")}</button>`;
+  const fsBtn  = isMobile ? '' : `<button type="button" onclick="toggleFullscreen('${id}')" aria-label="Maximize window" title="Maximize">${featherSvg("maximize-2")}</button>`;
 
   win.innerHTML = `
     <div class="title-bar" data-ada-component="window-titlebar" onmousedown="${isMobile ? '' : `startDrag(event,'${id}')`}">
       <div class="title">${filename}</div>
-      <div class="buttons">${minBtn}${fsBtn}<button onclick="closeWindow('${id}')">✖</button></div>
+      <div class="buttons">${minBtn}${fsBtn}<button type="button" onclick="closeWindow('${id}')" aria-label="Close window" title="Close">${featherSvg("x")}</button></div>
     </div>
     <div class="preview-body" data-ada-component="preview-body" id="${id}-body">Loading...</div>`;
 
   previewContainer.appendChild(win);
   windows[id] = win;
+  syncWorkspaceEmptyState();
+  if (window.matchMedia("(max-width: 768px)").matches) setFileDrawerOpen(false);
   fetchFileContent(path, filename, document.getElementById(id + '-body'));
 
   if (!isMobile) {
@@ -167,6 +174,7 @@ function closeWindow(id) {
   const w = windows[id];
   if (w) { w.remove(); delete windows[id]; delete mobileMin[id]; }
   isMobile ? renderMobileMinStack() : updateTaskbar();
+  syncWorkspaceEmptyState();
 }
 
 // ===== OVERRIDE minimizeWindow — handle mobile fallthrough =====
@@ -175,6 +183,7 @@ function minimizeWindow(id) {
   if (isMobile) { minimizeWindowMobile(id); return; }
   w.style.display = 'none';
   updateTaskbar();
+  syncWorkspaceEmptyState();
 }
 
 // ===== OVERRIDE updateTaskbar — fix names + scrollable =====
@@ -195,7 +204,7 @@ function updateTaskbar() {
     icon.className = 'task-icon';
     icon.dataset.name = name;
     icon.style.cssText = 'width:auto;padding:0 10px;gap:5px;font-size:12px;white-space:nowrap;display:flex;align-items:center;min-width:auto;';
-    icon.innerHTML = `<span>📄</span><span>${name}</span>`;
+    icon.innerHTML = `${featherSvg('file-text')}<span>${name}</span>`;
     icon.onclick = () => { el.style.display = 'block'; updateTaskbar(); };
     icon.oncontextmenu = e => { e.preventDefault(); showTaskbarContextMenu(e.pageX, e.pageY, id); };
     taskbar.appendChild(icon);

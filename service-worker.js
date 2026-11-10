@@ -5,7 +5,7 @@
 //   - GitHub API calls → Network-only (never cache)
 //   - Everything else → Network-first, fall back to cache, fall back to offline page
 
-const CACHE_VERSION = 'webman-v13';
+const CACHE_VERSION = 'webman-v19';
 const OFFLINE_PAGE  = 'offline.html';
 
 const APP_SHELL = [
@@ -14,22 +14,25 @@ const APP_SHELL = [
   'offline.html',
   'manifest.json',
   'favicon.png',
-  'bin/style.css?v=13',
+  'bin/style.css?v=19',
   'bin/theme-compat.js',
   'bin/theme-runtime.js',
   'bin/themes/ada-default.theme.css',
   'bin/themes/ada-midnight.theme.css',
   'bin/themes/ada-contrast.theme.css',
   'bin/file-search.js?v=13',
-  'bin/app.js?v=13',
-  'bin/auth.js',
-  'bin/upload.js',
-  'bin/mobile.js?v=13',
-  'bin/markdown.js',
+  'bin/pdf-viewer.js?v=19',
+  'bin/app.js?v=19',
+  'bin/auth.js?v=19',
+  'bin/upload.js?v=19',
+  'bin/mobile.js?v=19',
+  'bin/markdown.js?v=19',
   'bin/md-init.js',
-  'bin/obsidian-markdown-it.js',
+  'bin/obsidian-markdown-it.js?v=19',
   // tikzjax.js is 7 MB — cached on first use by the network-first handler, not pre-cached here
   'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap',
+  'https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap',
+  'https://cdn.jsdelivr.net/npm/feather-icons@4.29.2/dist/feather.min.js',
   'https://cdn.jsdelivr.net/npm/markdown-it@14/dist/markdown-it.min.js',
   'https://cdn.jsdelivr.net/npm/markdown-it-sub@1/dist/markdown-it-sub.min.js',
   'https://cdn.jsdelivr.net/npm/markdown-it-sup@1/dist/markdown-it-sup.min.js',

@@ -230,23 +230,20 @@ async function rotateAdminKey(adminId) {
 function updateSSHAuthUI() {
   const loginBtn = document.getElementById('loginBtnToolbar');
   const adminBtn = document.getElementById('adminPanelBtn');
-  const mobAdminBtn = document.getElementById('mobOverflowAdminBtn');
 
   if (!loginBtn) return;
 
   if (isSSHLoggedIn()) {
-    const icon = isSSHAdmin() ? '&#x1F511;' : '&#x2713;';
-    loginBtn.innerHTML = `${icon} ${sshSession.username}`;
+    const icon = isSSHAdmin() ? 'key' : 'user-check';
+    loginBtn.innerHTML = `${featherSvg(icon)}<span class="toolbar-action-label">${escapeHTML(sshSession.username)}</span>`;
     loginBtn.style.background = 'var(--selected)';
     loginBtn.style.color = 'var(--accent)';
     if (adminBtn && isSSHAdmin()) adminBtn.style.display = '';
-    if (mobAdminBtn && isSSHAdmin()) mobAdminBtn.style.display = '';
   } else {
-    loginBtn.innerHTML = '&#x1F511; SSH Login';
+    loginBtn.innerHTML = `${featherSvg('user')}<span class="toolbar-action-label">SSH Login</span>`;
     loginBtn.style.background = '';
     loginBtn.style.color = '';
     if (adminBtn) adminBtn.style.display = 'none';
-    if (mobAdminBtn) mobAdminBtn.style.display = 'none';
   }
 }
 

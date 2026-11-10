@@ -112,18 +112,18 @@ async function loadPendingUploads() {
       : '';
     return `
     <div class="pending-item" id="pi-${u.id}">
-      <span style="font-size:22px">${getIconForFilename(u.originalName)}</span>
+      <span class="pending-item-icon" aria-hidden="true">${featherSvg(getIconForFilename(u.originalName))}</span>
       <div style="min-width:0;flex:1">
         <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.originalName}${editTag}</div>
         <div style="font-size:11px;opacity:.5">${fmtSize(u.size)} · ${new Date(u.uploadedAt).toLocaleString()}</div>
-        <div style="font-size:11px;color:var(--accent);margin-top:2px">📁 ${destLabel}</div>
+        <div style="font-size:11px;color:var(--accent);margin-top:2px">${featherSvg('folder')} ${destLabel}</div>
       </div>
       <div class="pending-item-actions">
-        <button class="pa-btn view" onclick="previewPending('${u.id}')">👁 View</button>
-        <button class="pa-btn dl"   onclick="downloadPending('${u.id}')">📥 Download</button>
-        <button class="pa-btn rev"  onclick="reuploadPending('${u.id}')">🔄 Re-upload</button>
-        <button class="pa-btn ok"   onclick="approvePending('${u.id}')">✓ Approve</button>
-        <button class="pa-btn rej"  onclick="rejectPending('${u.id}')">✗ Deny</button>
+        <button class="pa-btn view" onclick="previewPending('${u.id}')">${featherSvg('eye')} View</button>
+        <button class="pa-btn dl"   onclick="downloadPending('${u.id}')">${featherSvg('download')} Download</button>
+        <button class="pa-btn rev"  onclick="reuploadPending('${u.id}')">${featherSvg('repeat')} Re-upload</button>
+        <button class="pa-btn ok"   onclick="approvePending('${u.id}')">${featherSvg('check')} Approve</button>
+        <button class="pa-btn rej"  onclick="rejectPending('${u.id}')">${featherSvg('x')} Deny</button>
       </div>
     </div>`;
   }).join('');
@@ -342,7 +342,8 @@ function uploadGoStep3() {
   if (!_pendingFiles.length) return;
   const count = _pendingFiles.length;
   const totalSize = _pendingFiles.reduce((s, f) => s + f.size, 0);
-  document.getElementById('us3icon').textContent = count === 1 ? getIconForFilename(_pendingFiles[0].name) : '📦';
+  const uploadIcon = count === 1 ? getIconForFilename(_pendingFiles[0].name) : 'archive';
+  document.getElementById('us3icon').innerHTML = featherSvg(uploadIcon);
   document.getElementById('us3name').textContent = count === 1 ? _pendingFiles[0].name : `${count} files selected`;
   document.getElementById('us3size').textContent = fmtSize(totalSize);
   const dest = (document.getElementById('us2destPath').value || '').trim().replace(/^\/|\/$/g, '');
@@ -351,7 +352,7 @@ function uploadGoStep3() {
     ? `${count} file${count > 1 ? 's' : ''} will be published directly to the repository.`
     : `${count} file${count > 1 ? 's' : ''} will be held for admin review and approval.`;
   document.getElementById('us3adminNote').style.display = isAdmin() ? '' : 'none';
-  document.getElementById('us3approveBtn').textContent = isAdmin() ? '✓ Publish to Repository' : '✓ Submit for Review';
+  document.getElementById('us3approveBtn').innerHTML = `${featherSvg('check')} ${isAdmin() ? 'Publish to Repository' : 'Submit for Review'}`;
   document.getElementById('us3progressWrap').style.display = 'none';
   document.getElementById('us3progressBar').style.width = '0%';
   ['us1','us2','us3'].forEach((id, i) => {
@@ -521,7 +522,7 @@ async function finalizeUpload() {
 function showUploadResultUI(ok, msg) {
   ['us1','us2','us3'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
   document.getElementById('usResult').style.display = '';
-  document.getElementById('usResultIcon').textContent  = ok ? '✅' : '⚠️';
+  document.getElementById('usResultIcon').innerHTML = featherSvg(ok ? 'check-circle' : 'alert-triangle');
   document.getElementById('usResultTitle').textContent = ok ? 'Done!' : 'Some uploads failed';
   document.getElementById('usResultMsg').style.whiteSpace = 'pre-line';
   document.getElementById('usResultMsg').textContent   = msg;

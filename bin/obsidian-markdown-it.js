@@ -437,8 +437,8 @@
       case 'video':
         return '<video controls class="obsidian-embed obsidian-video"' + wA + hA + '><source src="' + safe + '"><em>Video: <a href="' + safe + '">' + name + '</a></em></video>';
       case 'pdf': {
-        var pg = anchor ? '#page=' + encodeURIComponent(anchor) : '';
-        return '<iframe src="' + safe + pg + '" class="obsidian-embed obsidian-pdf"' + wA + hA + ' loading="lazy">PDF: <a href="' + safe + '">' + name + '</a></iframe>';
+        var pdfStyle = 'width:' + (sz.width ? sz.width + 'px' : '100%') + ';height:' + (sz.height ? sz.height + 'px' : '500px') + ';';
+        return '<div class="obsidian-embed obsidian-pdf ada-pdf-embed" data-pdf-src="' + safe + '" data-pdf-page="' + esc(anchor || '') + '" style="' + pdfStyle + '" role="region" aria-label="Embedded PDF: ' + name + '">Loading PDF…</div>';
       }
       case 'note':
         if (opts.resolveTransclusion) {
@@ -1254,7 +1254,7 @@
     /* ── Embeds ─────────────────────────────────────────────────────────────── */
     '.obsidian-image{max-width:100%;height:auto;border-radius:4px;display:block;margin:.5em auto}',
     '.obsidian-audio,.obsidian-video{display:block;max-width:100%;margin:.5em 0}',
-    '.obsidian-pdf{width:100%;min-height:500px;border:1px solid #ccc;border-radius:4px}',
+    '.obsidian-pdf{display:flex;flex-direction:column;max-width:100%;min-height:500px;border:1px solid #ccc;border-radius:4px;overflow:hidden}',
     '.obsidian-transclusion{border-left:3px solid #ccc;padding:.5em .8em;background:rgba(0,0,0,.03);border-radius:0 4px 4px 0;margin:.5em 0}',
     '.obsidian-block-id{display:none}',
     /* ── Mermaid viewer (pan/zoom) ──────────────────────────────────────────── */

@@ -11,6 +11,10 @@ const statusEl = document.getElementById("status");
 const fileSearchInput = document.getElementById("fileSearchInput");
 const clearFileSearchButton = document.getElementById("clearFileSearch");
 const fileSearchShortcut = document.querySelector(".toolbar-search-shortcut");
+const fileDrawer = document.getElementById("fileDrawer");
+const fileDrawerToggle = document.getElementById("fileDrawerToggle");
+const fileDrawerBackdrop = document.getElementById("fileDrawerBackdrop");
+const workspaceEmptyState = document.getElementById("workspaceEmptyState");
 if (fileSearchShortcut && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) {
   fileSearchShortcut.textContent = "⌘ K";
 }
@@ -27,6 +31,29 @@ let previewId = 0;
 const windows = {};
 const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 let updateDismissed = false;
+
+function featherSvg(name, className = "") {
+  const icon = window.feather?.icons?.[name];
+  if (!icon) return `<span class="icon-fallback ${className}" aria-hidden="true">•</span>`;
+  return icon.toSvg({ class: `ada-icon ${className}`.trim(), "aria-hidden": "true", "stroke-width": 1.8 });
+}
+
+function setFileDrawerOpen(isOpen) {
+  fileDrawer?.classList.toggle("is-open", isOpen);
+  fileDrawerToggle?.setAttribute("aria-expanded", String(isOpen));
+  fileDrawerBackdrop?.classList.toggle("is-visible", isOpen && window.matchMedia("(max-width: 768px)").matches);
+}
+
+fileDrawerToggle?.addEventListener("click", () => setFileDrawerOpen(!fileDrawer?.classList.contains("is-open")));
+document.getElementById("fileDrawerClose")?.addEventListener("click", () => setFileDrawerOpen(false));
+fileDrawerBackdrop?.addEventListener("click", () => setFileDrawerOpen(false));
+document.getElementById("openFilesFromWorkspace")?.addEventListener("click", () => setFileDrawerOpen(true));
+if (window.matchMedia("(max-width: 768px)").matches) setFileDrawerOpen(false);
+
+function syncWorkspaceEmptyState() {
+  const hasVisibleWindow = Object.values(windows).some((win) => win?.isConnected && win.style.display !== "none");
+  if (workspaceEmptyState) workspaceEmptyState.hidden = hasVisibleWindow;
+}
 
 // Runtime config loaded from /api/config (populated from Vercel env vars).
 // Fallbacks keep the app functional when running outside Vercel (e.g. local dev).
@@ -54,25 +81,25 @@ const EXCLUDED_ROOT_FILES = [
 ];
 
 const FILE_ICONS = {
-  folder: "📁",
-  md: "📝",
-  markdown: "📝",
-  pdf: "📕",
-  txt: "📄",
-  json: "🔧",
-  js: "📜",
-  html: "🌐",
-  css: "🎨",
-  py: "🐍",
-  jpg: "🖼️",
-  jpeg: "🖼️",
-  png: "🖼️",
-  gif: "🖼️",
-  svg: "🖼️",
-  doc:  "📘", docx: "📘",
-  xls:  "📗", xlsx: "📗",
-  ppt:  "📙", pptx: "📙",
-  default: "📄"
+  folder: "folder",
+  md: "file-text",
+  markdown: "file-text",
+  pdf: "file",
+  txt: "file-text",
+  json: "code",
+  js: "code",
+  html: "code",
+  css: "code",
+  py: "code",
+  jpg: "image",
+  jpeg: "image",
+  png: "image",
+  gif: "image",
+  svg: "image",
+  doc: "file-text", docx: "file-text",
+  xls: "grid", xlsx: "grid",
+  ppt: "monitor", pptx: "monitor",
+  default: "file"
 };
 
 if ("serviceWorker" in navigator) {
@@ -219,10 +246,10 @@ async function fetchTree() {
 	
 
 function getFileIcon(file) {
-  if (file.type === "folder") return FILE_ICONS.folder;
+  if (file.type === "folder") return featherSvg(FILE_ICONS.folder);
   
   const ext = file.name.split('.').pop().toLowerCase();
-  return FILE_ICONS[ext] || FILE_ICONS.default;
+  return featherSvg(FILE_ICONS[ext] || FILE_ICONS.default);
 }
 
 function getFileTypeClass(file) {
@@ -285,6 +312,7 @@ function toggleRecentFiles() {
   }
   clearFileSearch(false);
   setRecentFilesOpen(true);
+  setFileDrawerOpen(true);
   renderRecentFiles();
 }
 
@@ -314,7 +342,7 @@ function renderRecentFiles() {
   if (!entries.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state search-empty-state";
-    empty.innerHTML = '<div class="icon" aria-hidden="true">◷</div><h3>No recent files</h3><p>Files you preview will appear here for quick access on this device.</p>';
+    empty.innerHTML = `<div class="icon" aria-hidden="true">${featherSvg("clock")}</div><h3>No recent files</h3><p>Files you preview will appear here for quick access on this device.</p>`;
     listView.appendChild(empty);
     return;
   }
@@ -328,7 +356,7 @@ function renderRecentFiles() {
     const icon = document.createElement("span");
     icon.className = "search-result-icon";
     icon.setAttribute("aria-hidden", "true");
-    icon.textContent = getFileIcon(result.node);
+    icon.innerHTML = getFileIcon(result.node);
 
     const copy = document.createElement("span");
     copy.className = "search-result-copy";
@@ -367,7 +395,7 @@ function renderSearchResults() {
   if (items.length === 0) {
     const empty = document.createElement("div");
     empty.className = "empty-state search-empty-state";
-    empty.innerHTML = '<div class="icon" aria-hidden="true">🔎</div><h3>No matching files or folders</h3><p>Try a shorter name or a word from the folder path.</p>';
+    empty.innerHTML = `<div class="icon" aria-hidden="true">${featherSvg("search")}</div><h3>No matching files or folders</h3><p>Try a shorter name or a word from the folder path.</p>`;
     listView.appendChild(empty);
     return;
   }
@@ -381,7 +409,7 @@ function renderSearchResults() {
     const icon = document.createElement("span");
     icon.className = "search-result-icon";
     icon.setAttribute("aria-hidden", "true");
-    icon.textContent = getFileIcon(result.node);
+    icon.innerHTML = getFileIcon(result.node);
 
     const copy = document.createElement("span");
     copy.className = "search-result-copy";
@@ -429,6 +457,7 @@ function focusFileSearch() {
 fileSearchInput?.addEventListener("input", () => {
   setRecentFilesOpen(false);
   updateSearchClearButton();
+  if (fileSearchInput.value.trim()) setFileDrawerOpen(true);
   if (fileSearchInput.value.trim()) renderSearchResults();
   else if (currentNode) renderFolder(currentNode);
 });
@@ -470,6 +499,11 @@ clearFileSearchButton?.addEventListener("click", () => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && fileDrawer?.classList.contains("is-open") && window.matchMedia("(max-width: 768px)").matches) {
+    setFileDrawerOpen(false);
+    event.preventDefault();
+    return;
+  }
   const target = event.target;
   const isEditable = target instanceof HTMLElement
     && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
@@ -520,7 +554,7 @@ function renderFolder(node) {
   if (children.length === 0) {
     listView.innerHTML = `
       <div class="empty-state">
-        <div class="icon">📂</div>
+        <div class="icon" aria-hidden="true">${featherSvg("folder")}</div>
         <h3>This folder is empty</h3>
         <p>No files or folders to display</p>
       </div>
@@ -545,12 +579,12 @@ function renderFolder(node) {
       <div class="file-name" data-ada-component="file-name">${child.name}</div>
       <div class="file-actions" data-ada-component="file-actions">
         ${child.type === "file" ? `
-          <div class="file-action" data-ada-component="file-action" onclick="previewFile(event, ${i})">👁️</div>
-          <div class="file-action" data-ada-component="file-action" onclick="downloadFile(event, ${i})">📥</div>
-          ${isAdmin() ? `<div class="file-action file-action--delete" onclick="deleteFile(event, ${i})" title="Delete file">🗑️</div>` : ''}
+          <div class="file-action" data-ada-component="file-action" onclick="previewFile(event, ${i})" title="Preview ${child.name}" aria-label="Preview ${child.name}">${featherSvg("eye")}</div>
+          <div class="file-action" data-ada-component="file-action" onclick="downloadFile(event, ${i})" title="Download ${child.name}" aria-label="Download ${child.name}">${featherSvg("download")}</div>
+          ${isAdmin() ? `<div class="file-action file-action--delete" onclick="deleteFile(event, ${i})" title="Delete file" aria-label="Delete ${child.name}">${featherSvg("trash-2")}</div>` : ''}
         ` : ''}
       </div>
-      ${child.type === "file" ? `<div class="file-action-mob" onclick="openMobFileSheet(event, ${i})">⋯</div>` : ''}
+      ${child.type === "file" ? `<div class="file-action-mob" onclick="openMobFileSheet(event, ${i})" aria-label="More file actions">${featherSvg("more-horizontal")}</div>` : ''}
     `;
 
     item.onclick = (e) => {
@@ -637,7 +671,7 @@ function updatePathNav() {
   rootButton.className = "path-segment path-crumb-button";
   rootButton.setAttribute("aria-label", "Go to Ada root");
   rootButton.title = "Ada root";
-  rootButton.textContent = "☁️";
+  rootButton.innerHTML = `${featherSvg("home")}<span class="visually-hidden">Ada root</span>`;
   rootButton.addEventListener("click", goToRoot);
   pathNav.appendChild(rootButton);
 
@@ -768,6 +802,7 @@ function closeWindow(id) {
     win.remove();
     delete windows[id];
     updateTaskbar();
+    syncWorkspaceEmptyState();
   }
 }
 
@@ -776,14 +811,15 @@ function minimizeWindow(id) {
   if (win) {
     win.style.display = "none";
     updateTaskbar();
+    syncWorkspaceEmptyState();
   }
 }
 function showTaskbarContextMenu(x, y, id) {
   const menu = document.getElementById("taskbarContextMenu");
   menu.innerHTML = `
-    <button onclick="restoreFromTaskbar('${id}')">🗖 Restore</button>
-    <button onclick="minimizeWindow('${id}')">🗕 Minimize</button>
-    <button onclick="closeWindow('${id}')">✖ Close</button>
+    <button onclick="restoreFromTaskbar('${id}')">${featherSvg("maximize-2")} Restore</button>
+    <button onclick="minimizeWindow('${id}')">${featherSvg("minus")} Minimize</button>
+    <button onclick="closeWindow('${id}')">${featherSvg("x")} Close</button>
   `;
   menu.style.top = y + "px";
   menu.style.left = x + "px";
@@ -799,6 +835,7 @@ function restoreFromTaskbar(id) {
   if (win) {
     win.style.display = "block";
     updateTaskbar();
+    syncWorkspaceEmptyState();
   }
 }
 
@@ -819,7 +856,7 @@ function updateTaskbar() {
     const icon = document.createElement("div");
     icon.className = "task-icon";
     icon.dataset.name = el.querySelector(".title")?.textContent || "File";
-    icon.textContent = "📄";
+    icon.innerHTML = featherSvg("file-text");
 
     icon.onclick = () => {
       el.style.display = "block";
@@ -899,6 +936,7 @@ function openMobilePreview(path, filename) {
   mobilePreviewTitle.textContent = filename;
   fetchFileContent(path, filename, mobilePreviewContent);
   mobilePreview.style.display = "flex";
+  if (window.matchMedia("(max-width: 768px)").matches) setFileDrawerOpen(false);
 }
 
 function closeMobilePreview() {
@@ -923,15 +961,17 @@ function openPreview(path, filename) {
     <div class="title-bar" data-ada-component="window-titlebar" onmousedown="startDrag(event, '${id}')">
       <div class="title">${filename}</div>
       <div class="buttons">
-        <button onclick="minimizeWindow('${id}')">🗕</button>
-        <button onclick="toggleFullscreen('${id}')">🗖</button>
-        <button onclick="closeWindow('${id}')">✖</button>
+        <button type="button" onclick="minimizeWindow('${id}')" aria-label="Minimize window" title="Minimize">${featherSvg("minus")}</button>
+        <button type="button" onclick="toggleFullscreen('${id}')" aria-label="Maximize window" title="Maximize">${featherSvg("maximize-2")}</button>
+        <button type="button" onclick="closeWindow('${id}')" aria-label="Close window" title="Close">${featherSvg("x")}</button>
       </div>
     </div>
     <div class="preview-body" data-ada-component="preview-body" id="${id}-body">Loading...</div>
   `;
   previewContainer.appendChild(win);
   windows[id] = win;
+  syncWorkspaceEmptyState();
+  if (window.matchMedia("(max-width: 768px)").matches) setFileDrawerOpen(false);
 
   const container = document.getElementById(id + "-body");
   fetchFileContent(path, filename, container);
@@ -1065,7 +1105,10 @@ async function fetchFileContent(path, filename, container) {
 
     } else if (ext === 'pdf') {
       container.style.cssText = 'padding:0;overflow:hidden;display:flex;flex-direction:column;flex-grow:1;min-height:0;';
-      container.innerHTML = `<iframe src="${fetchUrl(path)}" style="flex:1;min-height:0;width:100%;border:none;display:block;"></iframe>`;
+      const response = await fetch(fetchUrl(path));
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!window.AdaPdfViewer) throw new Error("Ada’s PDF.js viewer did not load");
+      await window.AdaPdfViewer.render(container, await response.arrayBuffer());
 
     } else if (ext === 'md' || ext === 'markdown') {
       const response = await fetch(fetchUrl(path));

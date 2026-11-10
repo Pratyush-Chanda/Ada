@@ -182,11 +182,11 @@ function updateModernAuthUI() {
   if (!loginBtn) return;
 
   if (window.ModernAuthInstance.isLoggedIn()) {
-    loginBtn.textContent = '👤 ' + window.ModernAuthInstance.getEmail();
+    loginBtn.innerHTML = `${featherSvg('user')}<span class="toolbar-action-label">${escapeHTML(window.ModernAuthInstance.getEmail())}</span>`;
     loginBtn.style.background = 'var(--selected)';
     loginBtn.style.color = 'var(--accent)';
   } else {
-    loginBtn.textContent = '🔐 Login';
+    loginBtn.innerHTML = `${featherSvg('user')}<span class="toolbar-action-label">Login</span>`;
     loginBtn.style.background = '';
     loginBtn.style.color = '';
   }

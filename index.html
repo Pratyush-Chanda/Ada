@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="recaptcha-sitekey" content="6LcxfwktAAAAAFr3FmBO5LHM3m_j33369aSsOsOf" />
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#f8f9fa">
   <script>
     (() => {
       let preference = 'system';
@@ -17,12 +17,13 @@
         : preference;
       document.documentElement.dataset.themePreference = preference;
       document.documentElement.dataset.themeMode = mode;
+      document.querySelector('meta[name="theme-color"]').content = mode === 'dark' ? '#131314' : '#f8f9fa';
     })();
   </script>
   <link rel="icon" href="favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <!-- markdown-it (replaces marked) -->
   <script src="https://cdn.jsdelivr.net/npm/markdown-it@14/dist/markdown-it.min.js"></script>
   <!-- markdown-it optional plugins -->
@@ -58,12 +59,12 @@
   <!-- Desmos Graphing Calculator API -->
   <script src="/api/desmos.js"></script>
   <!-- Obsidian-syntax compatibility layer (replaces obsidian-md.js) -->
-  <script src="bin/obsidian-markdown-it.js"></script>
+  <script src="bin/obsidian-markdown-it.js?v=19"></script>
   <!-- Google reCAPTCHA v3 -->
   <script src="https://www.google.com/recaptcha/api.js?render=6LcxfwktAAAAAFr3FmBO5LHM3m_j33369aSsOsOf" async defer></script>
   <!-- Modern Email + Password Auth System -->
   <script src="bin/modern-auth.js"></script>
-  <link rel="stylesheet" href="bin/style.css?v=13">
+  <link rel="stylesheet" href="bin/style.css?v=19">
   <script src="bin/md-init.js"></script>
 </head>
 <body>
@@ -72,33 +73,33 @@
   <!-- ===== FIRST-TIME GUIDANCE ===== -->
   <div id="guidanceOverlay" class="full-overlay">
     <div class="overlay-card">
-      <div class="overlay-icon-lg">👋</div>
+      <div class="overlay-icon-lg"><i data-feather="book-open" aria-hidden="true"></i></div>
       <div class="overlay-heading">Welcome to Ada</div>
       <div class="overlay-subtext">A quick guide to get you started</div>
       <div class="guide-tabs">
-        <button class="guide-tab" id="guideTabDesktop" onclick="switchGuideTab('desktop')">🖥️ Desktop</button>
-        <button class="guide-tab" id="guideTabMobile" onclick="switchGuideTab('mobile')">📱 Mobile</button>
+        <button class="guide-tab" id="guideTabDesktop" onclick="switchGuideTab('desktop')"><i data-feather="monitor" aria-hidden="true"></i> Desktop</button>
+        <button class="guide-tab" id="guideTabMobile" onclick="switchGuideTab('mobile')"><i data-feather="smartphone" aria-hidden="true"></i> Mobile</button>
       </div>
       <div id="guideDesktop">
-        <div class="guide-step"><div class="guide-step-icon">👆</div><div class="guide-step-text"><strong>Click to open files</strong><span>Single-click any file to preview it in a floating window</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon">🖱️</div><div class="guide-step-text"><strong>Right-click for options</strong><span>Right-click any file for Preview or Download options</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon">⠿</div><div class="guide-step-text"><strong>Drag windows freely</strong><span>Hold and drag the title bar to reposition any window</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon">🗕</div><div class="guide-step-text"><strong>Minimise to taskbar</strong><span>Click 🗕 to minimise — windows appear in the scrollable bottom bar</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon">🔎</div><div class="guide-step-text"><strong>Find files quickly</strong><span>Search file and folder names across Ada; press Ctrl+K or ⌘K to jump to search</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon">📂</div><div class="guide-step-text"><strong>Navigate folders</strong><span>Click a folder to open it, use ↑ or the breadcrumb to move around</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon">📤</div><div class="guide-step-text"><strong>Upload files</strong><span>Click 📤 in the toolbar to upload a file for admin review</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon">🔑</div><div class="guide-step-text"><strong>Admin access</strong><span>Click 🔑 Login in the toolbar to enter your access code</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="mouse-pointer" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Click to open files</strong><span>Single-click any file to preview it in a floating window</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="more-horizontal" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Right-click for options</strong><span>Right-click any file for Preview or Download options</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="move" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Drag windows freely</strong><span>Hold and drag the title bar to reposition any window</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="minus" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Minimise to taskbar</strong><span>Use the minimize control — windows appear in the bottom bar</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="search" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Find files quickly</strong><span>Search file and folder names across Ada; press Ctrl+K or ⌘K to jump to search</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="folder" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Navigate folders</strong><span>Click a folder to open it, use the parent-folder action or breadcrumb to move around</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="upload-cloud" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Upload files</strong><span>Choose More → Upload file to submit a file for admin review</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="user" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Admin access</strong><span>Select Login in the toolbar to enter your access code</span></div></div>
       </div>
       <div id="guideMobile" style="display:none">
-        <div class="guide-step"><div class="guide-step-icon">👆</div><div class="guide-step-text"><strong>Tap to open files</strong><span>Tap any file to open a full-screen preview</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon">🗕</div><div class="guide-step-text"><strong>Minimise to corner button</strong><span>Tap 🗕 to minimise — a floating button appears at the bottom-right</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon">🔄</div><div class="guide-step-text"><strong>Switch between open files</strong><span>Tap a minimised button to restore it; any open file auto-minimises</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon">🔎</div><div class="guide-step-text"><strong>Find files quickly</strong><span>Search file and folder names across Ada</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon">📂</div><div class="guide-step-text"><strong>Navigate folders</strong><span>Tap a folder to open, use ↑ or the breadcrumb to move around</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon">📤</div><div class="guide-step-text"><strong>Upload files</strong><span>Tap 📤 in the toolbar to submit a file for review</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon">🔑</div><div class="guide-step-text"><strong>Admin access</strong><span>Tap 🔑 Login to enter your admin access code</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="smartphone" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Tap to open files</strong><span>Tap any file to open a full-screen preview</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="minus" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Minimise to corner button</strong><span>Use the minimize control — a floating button appears at the bottom-right</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="repeat" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Switch between open files</strong><span>Tap a minimised button to restore it; any open file auto-minimises</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="search" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Find files quickly</strong><span>Search file and folder names across Ada</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="folder" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Navigate folders</strong><span>Tap a folder to open, use the parent-folder action or breadcrumb to move around</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="upload-cloud" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Upload files</strong><span>Choose More → Upload file to submit a file for review</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="user" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Admin access</strong><span>Select Login to enter your admin access code</span></div></div>
       </div>
-      <button class="overlay-btn-primary" onclick="dismissGuidance()" style="margin-top:20px">Got it — let's go! 🚀</button>
+      <button class="overlay-btn-primary" onclick="dismissGuidance()" style="margin-top:20px">Got it — let’s go</button>
     </div>
   </div>
 
@@ -115,7 +116,7 @@
       
       <!-- Login View -->
       <div id="loginView">
-        <div class="overlay-icon-lg" style="font-size:42px">🔐</div>
+        <div class="overlay-icon-lg" style="font-size:42px"><i data-feather="user" aria-hidden="true"></i></div>
         <div class="overlay-heading">Welcome Back</div>
         <div class="overlay-subtext">Sign in to your account</div>
         
@@ -140,7 +141,7 @@
       
       <!-- Register View -->
       <div id="registerView" style="display:none">
-        <div class="overlay-icon-lg" style="font-size:42px">📝</div>
+        <div class="overlay-icon-lg" style="font-size:42px"><i data-feather="user-plus" aria-hidden="true"></i></div>
         <div class="overlay-heading">Create Account</div>
         <div class="overlay-subtext">Join NoteBooks today</div>
         
@@ -167,7 +168,7 @@
       
       <!-- Forgot Password View -->
       <div id="forgotView" style="display:none">
-        <div class="overlay-icon-lg" style="font-size:42px">🔑</div>
+        <div class="overlay-icon-lg" style="font-size:42px"><i data-feather="key" aria-hidden="true"></i></div>
         <div class="overlay-heading">Reset Password</div>
         <div class="overlay-subtext">Enter your email to receive a reset link</div>
         
@@ -187,7 +188,7 @@
       
       <!-- Logged In View -->
       <div id="loggedInView" style="display:none">
-        <div class="overlay-icon-lg" style="font-size:42px">✅</div>
+        <div class="overlay-icon-lg" style="font-size:42px"><i data-feather="check-circle" aria-hidden="true"></i></div>
         <div class="overlay-heading">Welcome!</div>
         <div class="overlay-subtext" id="loggedInEmail"></div>
         <div style="background:var(--bg);border-radius:10px;padding:14px;margin:16px 0;font-size:13px">
@@ -209,7 +210,7 @@
       
       <!-- SSH Terminal Access -->
       <div class="admin-section">
-        <h3>&#x1F4BB; SSH Terminal</h3>
+        <h3><i data-feather="terminal" aria-hidden="true"></i> SSH Terminal</h3>
         <div style="font-size:13px;opacity:.65;line-height:1.6;margin-bottom:12px">
           Access the SSH-style terminal for advanced administration. Manage users, view logs, and rotate keys.
         </div>
@@ -218,13 +219,13 @@
       
       <!-- SSH Users Management -->
       <div class="admin-section">
-        <h3>&#x1F465; SSH Users</h3>
+        <h3><i data-feather="users" aria-hidden="true"></i> SSH Users</h3>
         <div id="sshUsersList"><div style="font-size:13px;opacity:.5;padding:6px 0">No SSH users registered.</div></div>
       </div>
       
       <!-- Super admin: manage codes -->
       <div id="superAdminSection" class="admin-section" style="display:none">
-        <h3>🔑 Admin Codes</h3>
+          <h3><i data-feather="key" aria-hidden="true"></i> Admin Codes</h3>
         <div id="adminCodesList"><div style="font-size:13px;opacity:.5;padding:6px 0">No admin codes yet.</div></div>
         <button class="overlay-btn-secondary" style="width:auto;padding:8px 16px;margin-top:8px" onclick="toggleCreateAdminForm()">+ Create New Admin</button>
         <div id="createAdminForm" style="display:none;margin-top:14px;padding:16px;background:var(--bg);border-radius:13px">
@@ -243,12 +244,12 @@
       </div>
       <!-- Pending uploads -->
       <div class="admin-section">
-        <h3>📥 Pending Uploads <span id="pendingCountLabel" style="font-size:12px;font-weight:400;opacity:.55"></span></h3>
+        <h3><i data-feather="inbox" aria-hidden="true"></i> Pending Uploads <span id="pendingCountLabel" style="font-size:12px;font-weight:400;opacity:.55"></span></h3>
         <div id="pendingUploadsList"><div style="font-size:13px;opacity:.5;padding:6px 0">No pending uploads.</div></div>
       </div>
       <!-- GitHub Integration info -->
       <div class="admin-section">
-        <h3>⚙️ GitHub Integration</h3>
+        <h3><i data-feather="github" aria-hidden="true"></i> GitHub Integration</h3>
         <div style="font-size:13px;opacity:.65;line-height:1.6">
           All GitHub operations (approving uploads, revoking admin codes, deleting files) are handled server-side via the Vercel proxy <code>/api/gh</code>. The PAT is stored exclusively as a Vercel environment variable (<code>GITHUB_PAT</code>) and is never sent to the browser.
         </div>
@@ -270,7 +271,7 @@
         <div class="overlay-heading">Upload Files</div>
         <div class="overlay-subtext">Choose one or more files to upload</div>
         <div class="drop-zone" id="dropZone" onclick="document.getElementById('filePickerInput').click()" ondragover="uploadDragOver(event)" ondragleave="uploadDragLeave(event)" ondrop="uploadFileDrop(event)">
-          <div class="dz-icon">📤</div>
+          <div class="dz-icon"><i data-feather="upload-cloud" aria-hidden="true"></i></div>
           <p>Drop files here or tap to browse</p>
           <button class="overlay-btn-secondary" style="width:auto;padding:8px 20px" onclick="event.stopPropagation();document.getElementById('filePickerInput').click()">Browse Files</button>
         </div>
@@ -282,18 +283,18 @@
         <div class="overlay-subtext" id="us2sub">Review before submitting</div>
         <!-- File queue list -->
         <div id="us2fileQueue" style="max-height:190px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin:10px 0"></div>
-        <div id="us2pendingNotice" class="pending-notice">⏳ <span>Files will be held for admin review and approval before being published.</span></div>
-        <div id="us2adminNotice" class="admin-notice" style="display:none">✓ As an admin, your files will be published directly to the repository.</div>
+        <div id="us2pendingNotice" class="pending-notice"><i data-feather="clock" aria-hidden="true"></i> <span>Files will be held for admin review and approval before being published.</span></div>
+        <div id="us2adminNotice" class="admin-notice" style="display:none"><i data-feather="check-circle" aria-hidden="true"></i> As an admin, your files will be published directly to the repository.</div>
         <!-- Destination folder (all users) -->
         <div id="us2destSection" style="margin-top:12px">
-          <div style="font-size:13px;font-weight:500;margin-bottom:5px">📁 Destination folder</div>
+          <div style="font-size:13px;font-weight:500;margin-bottom:5px"><i data-feather="folder" aria-hidden="true"></i> Destination folder</div>
           <input type="text" id="us2destPath" class="text-input" placeholder="e.g. books/sci-fi (leave blank for root)">
           <div style="font-size:11px;opacity:.5;margin-top:3px">Where in the repository should these files be placed? New folders/subfolders will be created if needed.</div>
         </div>
         <!-- Admin: optional re-upload of modified version (single file only) -->
         <div id="us2reuploadSection" style="display:none;margin-top:10px">
           <div style="font-size:13px;font-weight:500;margin-bottom:6px">Replace with modified version (optional)</div>
-          <button class="overlay-btn-secondary" style="width:auto;padding:8px 16px" onclick="document.getElementById('reuploadPicker').click()">📎 Choose modified file</button>
+          <button class="overlay-btn-secondary" style="width:auto;padding:8px 16px" onclick="document.getElementById('reuploadPicker').click()"><i data-feather="paperclip" aria-hidden="true"></i> Choose modified file</button>
           <input type="file" id="reuploadPicker" style="display:none" onchange="onReuploadPicked(event)">
           <div id="reuploadInfo" style="font-size:12px;opacity:.6;margin-top:6px"></div>
         </div>
@@ -305,11 +306,11 @@
         <div class="overlay-heading">Confirm Upload</div>
         <div class="overlay-subtext" id="us3sub">Please confirm to submit</div>
         <div class="fpc" id="us3card">
-          <div class="fpc-icon" id="us3icon">📄</div>
+          <div class="fpc-icon" id="us3icon"><i data-feather="file" aria-hidden="true"></i></div>
           <div><div class="fpc-name" id="us3name"></div><div class="fpc-size" id="us3size"></div></div>
         </div>
-        <div style="font-size:12px;opacity:.6;margin:2px 0 8px;text-align:center">📁 Destination: <span id="us3destPath">repository root</span></div>
-        <div id="us3adminNote" class="admin-notice" style="display:none">✓ These files will be committed directly to the repository.</div>
+        <div style="font-size:12px;opacity:.6;margin:2px 0 8px;text-align:center"><i data-feather="folder" aria-hidden="true"></i> Destination: <span id="us3destPath">repository root</span></div>
+        <div id="us3adminNote" class="admin-notice" style="display:none"><i data-feather="check-circle" aria-hidden="true"></i> These files will be committed directly to the repository.</div>
         <div id="us3progressWrap" style="display:none;margin:10px 0">
           <div style="font-size:13px;text-align:center;margin-bottom:6px" id="us3progressLabel">Uploading…</div>
           <div style="background:var(--border);border-radius:99px;height:6px;overflow:hidden">
@@ -321,7 +322,7 @@
       </div>
       <!-- Result -->
       <div id="usResult" style="display:none;text-align:center;padding:10px 0">
-        <div style="font-size:48px;margin-bottom:14px" id="usResultIcon">✅</div>
+        <div style="font-size:48px;margin-bottom:14px" id="usResultIcon"><i data-feather="check-circle" aria-hidden="true"></i></div>
         <div class="overlay-heading" id="usResultTitle">Done!</div>
         <div class="overlay-subtext" id="usResultMsg">Your file has been submitted for review.</div>
         <button class="overlay-btn-primary" onclick="hideUploadScreen()">Close</button>
@@ -342,7 +343,7 @@
   <!-- Desktop: delete file confirmation -->
   <div id="deleteConfirm" class="confirm-overlay" style="display:none">
     <div class="confirm-card">
-      <div style="font-size:36px;margin-bottom:10px">🗑️</div>
+      <div class="confirm-icon"><i data-feather="trash-2" aria-hidden="true"></i></div>
       <h3>Delete file?</h3>
       <p id="deleteConfirmMsg">This will permanently remove the file from the repository. This cannot be undone.</p>
       <button class="overlay-btn-primary" style="background:#e53935;margin-bottom:4px" onclick="confirmDeleteFile()">Delete permanently</button>
@@ -354,11 +355,11 @@
   <div id="deleteMobileOverlay" class="full-overlay">
     <div class="overlay-card">
       <button class="overlay-close" onclick="cancelDeleteFile()">×</button>
-      <div class="overlay-icon-lg">🗑️</div>
+      <div class="overlay-icon-lg"><i data-feather="trash-2" aria-hidden="true"></i></div>
       <div class="overlay-heading">Delete file?</div>
       <div class="overlay-subtext" id="deleteMobileMsg">This will permanently remove the file from the repository.</div>
       <div style="background:rgba(229,57,53,0.07);border:1px solid rgba(229,57,53,0.25);border-radius:10px;padding:11px 14px;font-size:13px;margin:12px 0;color:#c62828">
-        ⚠ This action cannot be undone.
+        <i data-feather="alert-triangle" aria-hidden="true"></i> This action cannot be undone.
       </div>
       <button class="overlay-btn-primary" style="background:#e53935" onclick="confirmDeleteFile()">Delete permanently</button>
       <button class="overlay-btn-ghost" onclick="cancelDeleteFile()">Cancel</button>
@@ -371,14 +372,14 @@
       <div id="mobFileSheetHandle"></div>
       <div id="mobFileSheetTitle"></div>
       <button class="mob-sheet-btn" id="mobSheetPreview" onclick="mobSheetAction('preview')">
-        <span class="msb-icon">👁️</span> Preview
+        <span class="msb-icon"><i data-feather="eye" aria-hidden="true"></i></span> Preview
       </button>
       <button class="mob-sheet-btn" id="mobSheetDownload" onclick="mobSheetAction('download')">
-        <span class="msb-icon">📥</span> Download
+        <span class="msb-icon"><i data-feather="download" aria-hidden="true"></i></span> Download
       </button>
       <div class="mob-sheet-sep"></div>
       <button class="mob-sheet-btn danger" id="mobSheetDelete" style="display:none" onclick="mobSheetAction('delete')">
-        <span class="msb-icon">🗑️</span> Delete
+        <span class="msb-icon"><i data-feather="trash-2" aria-hidden="true"></i></span> Delete
       </button>
       <button class="mob-sheet-btn" onclick="closeMobFileSheet()">
         <span class="msb-icon" style="opacity:.4">✕</span> Cancel
@@ -403,63 +404,78 @@
     </div>
   </div>
 
-  <div class="window" id="adaAppShell" data-ada-component="app-shell">
-    <div class="toolbar" data-ada-component="toolbar">
-      <h1>Ada</h1>
+  <div class="window app-shell" id="adaAppShell" data-ada-component="app-shell">
+    <header class="toolbar" data-ada-component="toolbar">
+      <div class="toolbar-leading">
+        <button id="fileDrawerToggle" class="toolbar-icon-button" type="button" aria-label="Browse files" title="Browse files" aria-controls="fileDrawer" aria-expanded="true">
+          <i data-feather="menu" aria-hidden="true"></i>
+        </button>
+        <a class="toolbar-brand" href="#" onclick="event.preventDefault();goToRoot()" aria-label="Ada home">Ada</a>
+      </div>
       <div class="toolbar-search" role="search">
         <label class="visually-hidden" for="fileSearchInput">Search all files and folders</label>
-        <span class="toolbar-search-icon" aria-hidden="true">⌕</span>
+        <i class="toolbar-search-icon" data-feather="search" aria-hidden="true"></i>
         <input id="fileSearchInput" type="search" placeholder="Search files and folders" autocomplete="off" spellcheck="false" aria-keyshortcuts="Control+K Meta+K" aria-controls="listView">
         <kbd class="toolbar-search-shortcut" aria-hidden="true">Ctrl K</kbd>
         <button id="clearFileSearch" type="button" aria-label="Clear search" title="Clear search" hidden>×</button>
       </div>
-      <!-- Secondary buttons hidden on mobile into overflow menu -->
-      <button class="mob-toolbar-overflow" id="recentFilesToggle" type="button" onclick="toggleRecentFiles()" title="Recently opened files" aria-controls="listView" aria-expanded="false">◷ Recent</button>
-      <button class="mob-toolbar-overflow" onclick="refreshFiles()" title="Refresh">↻</button>
-      <button class="mob-toolbar-overflow" onclick="goUp()" title="Go up" aria-label="Go to parent folder">↑</button>
-      <button class="mob-toolbar-overflow" id="uploadBtnToolbar" onclick="showUploadScreen()" title="Upload file" style="font-size:15px">📤</button>
-      <button class="mob-toolbar-overflow" id="adminPanelBtn" onclick="showAdminPanel()" title="Admin panel" style="display:none; font-size:15px">⚙️</button>
-      <button class="mob-toolbar-overflow" id="communityBtnToolbar" onclick="openCommunity()" title="Community" style="font-size:15px">💬</button>
-      <button class="mob-toolbar-overflow" id="themeDashboardToolbarBtn" onclick="openThemeDashboard()" title="Themes" aria-label="Open theme dashboard">🎨</button>
-      <!-- Always visible on both desktop and mobile -->
-      <button id="loginBtnToolbar" onclick="showLoginScreen()" title="Login / Account">🔑 Login</button>
-      <!-- Mobile-only overflow toggle -->
-      <button id="mobOverflowBtn" onclick="toggleMobOverflow()" title="More options">⋯</button>
-    </div>
-    <!-- Mobile overflow dropdown -->
+      <div class="toolbar-actions" aria-label="Application actions">
+        <button class="toolbar-action desktop-only" id="recentFilesToggle" type="button" onclick="toggleRecentFiles()" title="Recently opened files" aria-label="Recently opened files" aria-controls="listView" aria-expanded="false"><i data-feather="clock" aria-hidden="true"></i><span class="toolbar-action-label">Recent</span></button>
+        <button class="toolbar-action toolbar-account" id="loginBtnToolbar" type="button" onclick="showLoginScreen()" title="Login / Account" aria-label="Login or account"><i data-feather="user" aria-hidden="true"></i><span class="toolbar-action-label">Login</span></button>
+        <button class="toolbar-icon-button" id="mobOverflowBtn" type="button" onclick="toggleMobOverflow()" title="More actions" aria-label="More actions" aria-expanded="false"><i data-feather="more-horizontal" aria-hidden="true"></i></button>
+      </div>
+    </header>
+    <!-- Compact action menu -->
     <div id="mobOverflowMenu">
+      <button class="mob-overflow-item" onclick="toggleRecentFiles();closeMobOverflow()">
+        <i class="moi-icon" data-feather="clock" aria-hidden="true"></i> Recently opened
+      </button>
       <button class="mob-overflow-item" onclick="refreshFiles();closeMobOverflow()">
-        <span class="moi-icon">↻</span> Refresh
+        <i class="moi-icon" data-feather="refresh-cw" aria-hidden="true"></i> Refresh
       </button>
       <button class="mob-overflow-item" onclick="goUp();closeMobOverflow()">
-        <span class="moi-icon">↑</span> Go Up
-      </button>
-      <button class="mob-overflow-item" onclick="toggleRecentFiles();closeMobOverflow()">
-        <span class="moi-icon">◷</span> Recently Opened
+        <i class="moi-icon" data-feather="arrow-up" aria-hidden="true"></i> Go Up
       </button>
       <button class="mob-overflow-item" onclick="showUploadScreen();closeMobOverflow()">
-        <span class="moi-icon">📤</span> Upload File
+        <i class="moi-icon" data-feather="upload-cloud" aria-hidden="true"></i> Upload File
       </button>
       <div class="mob-overflow-sep"></div>
       <button class="mob-overflow-item" onclick="openCommunity();closeMobOverflow()">
-        <span class="moi-icon">💬</span> Community
+        <i class="moi-icon" data-feather="message-circle" aria-hidden="true"></i> Community
       </button>
       <button class="mob-overflow-item" onclick="openThemeDashboard();closeMobOverflow()">
-        <span class="moi-icon">🎨</span> Themes
+        <i class="moi-icon" data-feather="sliders" aria-hidden="true"></i> Themes
       </button>
-      <button class="mob-overflow-item" id="mobOverflowAdminBtn" style="display:none" onclick="showAdminPanel();closeMobOverflow()">
-        <span class="moi-icon">⚙️</span> Admin Panel
+      <button class="mob-overflow-item" id="adminPanelBtn" style="display:none" onclick="showAdminPanel();closeMobOverflow()">
+        <i class="moi-icon" data-feather="settings" aria-hidden="true"></i> Admin Panel
       </button>
     </div>
-    <div class="path-nav" id="pathNav" data-ada-component="path-navigation">
-      <button class="path-segment path-crumb-button" type="button" onclick="goToRoot()" aria-label="Go to Ada root" title="Ada root">☁️</button>
+    <div class="app-main">
+      <div class="file-drawer-backdrop" id="fileDrawerBackdrop"></div>
+      <aside class="file-drawer is-open" id="fileDrawer" aria-label="File navigation">
+        <div class="drawer-heading">
+          <div class="drawer-heading-title"><i data-feather="folder" aria-hidden="true"></i><span>Files</span></div>
+          <button class="toolbar-icon-button drawer-close" id="fileDrawerClose" type="button" aria-label="Close file navigation" title="Close file navigation"><i data-feather="x" aria-hidden="true"></i></button>
+        </div>
+        <div class="path-nav" id="pathNav" data-ada-component="path-navigation">
+          <button class="path-segment path-crumb-button" type="button" onclick="goToRoot()" aria-label="Go to Ada root" title="Ada root"><i data-feather="home" aria-hidden="true"></i><span class="visually-hidden">Ada root</span></button>
+        </div>
+        <div class="list-view" id="listView" data-ada-component="file-list"></div>
+      </aside>
+      <main class="workspace" id="workspace" aria-label="Document workspace">
+        <section class="workspace-empty" id="workspaceEmptyState">
+          <div class="workspace-empty-icon"><i data-feather="file-text" aria-hidden="true"></i></div>
+          <h2>Your workspace</h2>
+          <p>Choose a file to open it here. Your documents stay in Ada’s familiar preview windows.</p>
+          <button class="workspace-browse-button" id="openFilesFromWorkspace" type="button"><i data-feather="folder" aria-hidden="true"></i><span>Browse files</span></button>
+        </section>
+      </main>
     </div>
-    <div class="list-view" id="listView" data-ada-component="file-list"></div>
   </div>
 
   <div class="context-menu" id="contextMenu">
-    <button onclick="handlePreview()"><span class="icon">👁️</span>Preview</button>
-    <button onclick="handleDownload()"><span class="icon">📥</span>Download</button>
+    <button onclick="handlePreview()"><span class="icon"><i data-feather="eye" aria-hidden="true"></i></span>Preview</button>
+    <button onclick="handleDownload()"><span class="icon"><i data-feather="download" aria-hidden="true"></i></span>Download</button>
   </div>
 
   <div class="preview-container" id="previewContainer" data-ada-component="preview-area"></div>
@@ -569,9 +585,13 @@
 <script src="bin/gh-proxy.js"></script>
 <script src="bin/theme-compat.js"></script>
 <script src="bin/theme-runtime.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.2/dist/feather.min.js"></script>
+<script>window.feather?.replace({ 'stroke-width': 1.8 });</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="bin/pdf-viewer.js?v=19"></script>
 <script src="bin/file-search.js?v=13"></script>
-<script src="bin/app.js?v=13"></script>
-<script src="bin/markdown.js"></script>
+<script src="bin/app.js?v=19"></script>
+<script src="bin/markdown.js?v=19"></script>
 <div id="updateNotice" style="display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--item); color: var(--fg); padding: 12px 20px; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.2); z-index: 9999; align-items: center; gap: 12px;">
   <span>Update detected. Refresh now to apply changes.</span>
   <button onclick="location.reload()" style="background:var(--accent);color:white;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">Refresh</button>
@@ -579,7 +599,7 @@
 	</div>
 <div id="taskbarContextMenu" class="context-menu" style="display: none;"></div>
 <script src="bin/admin-terminal.js"></script>
-<script src="bin/auth.js"></script>
-<script src="bin/upload.js"></script>
-<script src="bin/mobile.js?v=13"></script>
+<script src="bin/auth.js?v=19"></script>
+<script src="bin/upload.js?v=19"></script>
+<script src="bin/mobile.js?v=19"></script>
 </body>
