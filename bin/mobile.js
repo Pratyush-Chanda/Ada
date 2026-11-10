@@ -67,10 +67,13 @@ const mobileMin = {}; // id -> { name }
 
 function minimizeWindowMobile(id) {
   const w = windows[id]; if (!w) return;
-  w.style.display = 'none';
-  mobileMin[id] = { name: w.querySelector('.title')?.textContent || 'File' };
-  renderMobileMinStack();
-  syncWorkspaceEmptyState();
+  animateWindowOut(w, 'is-minimizing', () => {
+    if (windows[id] !== w) return;
+    w.style.display = 'none';
+    mobileMin[id] = { name: w.querySelector('.title')?.textContent || 'File' };
+    renderMobileMinStack();
+    syncWorkspaceEmptyState();
+  });
 }
 
 function restoreWindowMobile(id) {
@@ -82,7 +85,7 @@ function restoreWindowMobile(id) {
     }
   }
   const w = windows[id];
-  if (w) { w.style.display = 'flex'; delete mobileMin[id]; }
+  if (w) { w.style.display = 'flex'; delete mobileMin[id]; focusWindow(id); }
   renderMobileMinStack();
   syncWorkspaceEmptyState();
 }
@@ -150,6 +153,7 @@ function openPreview(path, filename) {
 
   previewContainer.appendChild(win);
   windows[id] = win;
+  registerPreviewWindow(win);
   syncWorkspaceEmptyState();
   if (window.matchMedia("(max-width: 768px)").matches) setFileDrawerOpen(false);
   fetchFileContent(path, filename, document.getElementById(id + '-body'));
@@ -172,18 +176,25 @@ function handlePreview() {
 // ===== OVERRIDE closeWindow — handle mobile min stack =====
 function closeWindow(id) {
   const w = windows[id];
-  if (w) { w.remove(); delete windows[id]; delete mobileMin[id]; }
-  isMobile ? renderMobileMinStack() : updateTaskbar();
-  syncWorkspaceEmptyState();
+  if (!w || w.classList.contains('is-closing')) return;
+  animateWindowOut(w, 'is-closing', () => {
+    if (windows[id] !== w) return;
+    w.remove(); delete windows[id]; delete mobileMin[id];
+    isMobile ? renderMobileMinStack() : updateTaskbar();
+    syncWorkspaceEmptyState();
+  });
 }
 
 // ===== OVERRIDE minimizeWindow — handle mobile fallthrough =====
 function minimizeWindow(id) {
   const w = windows[id]; if (!w) return;
   if (isMobile) { minimizeWindowMobile(id); return; }
-  w.style.display = 'none';
-  updateTaskbar();
-  syncWorkspaceEmptyState();
+  animateWindowOut(w, 'is-minimizing', () => {
+    if (windows[id] !== w) return;
+    w.style.display = 'none';
+    updateTaskbar();
+    syncWorkspaceEmptyState();
+  });
 }
 
 // ===== OVERRIDE updateTaskbar — fix names + scrollable =====
@@ -205,7 +216,7 @@ function updateTaskbar() {
     icon.dataset.name = name;
     icon.style.cssText = 'width:auto;padding:0 10px;gap:5px;font-size:12px;white-space:nowrap;display:flex;align-items:center;min-width:auto;';
     icon.innerHTML = `${featherSvg('file-text')}<span>${name}</span>`;
-    icon.onclick = () => { el.style.display = 'block'; updateTaskbar(); };
+    icon.onclick = () => restoreFromTaskbar(id);
     icon.oncontextmenu = e => { e.preventDefault(); showTaskbarContextMenu(e.pageX, e.pageY, id); };
     taskbar.appendChild(icon);
   }

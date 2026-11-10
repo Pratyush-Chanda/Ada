@@ -32,6 +32,106 @@ const windows = {};
 const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 let updateDismissed = false;
 
+let windowZIndex = 2000;
+const windowRestoreBounds = new WeakMap();
+
+function focusWindow(id) {
+  const win = windows[id];
+  if (!win || !win.isConnected || win.style.display === "none") return;
+  Object.values(windows).forEach((other) => other.classList.remove("is-focused"));
+  win.classList.add("is-focused");
+  win.style.zIndex = String(++windowZIndex);
+}
+
+function addWindowResizeHandles(win) {
+  if (!win || isMobile || window.matchMedia("(max-width: 768px)").matches) return;
+  ["n", "s", "e", "w", "ne", "nw", "se", "sw"].forEach((direction) => {
+    const handle = document.createElement("button");
+    handle.type = "button";
+    handle.className = `window-resize-handle window-resize-${direction}`;
+    handle.setAttribute("aria-label", `Resize window ${direction}`);
+    handle.title = `Resize ${direction}`;
+    handle.addEventListener("pointerdown", (event) => {
+      if (win.classList.contains("fullscreen")) return;
+      event.preventDefault();
+      event.stopPropagation();
+      handle.focus({ preventScroll: true });
+      focusWindow(win.dataset.id);
+      const rect = win.getBoundingClientRect();
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const onMove = (moveEvent) => {
+        if (moveEvent.pointerId !== event.pointerId) return;
+        const dx = moveEvent.clientX - startX;
+        const dy = moveEvent.clientY - startY;
+        let width = rect.width;
+        let height = rect.height;
+        let left = rect.left;
+        let top = rect.top;
+        if (direction.includes("e")) width = Math.max(320, rect.width + dx);
+        if (direction.includes("w")) { width = Math.max(320, rect.width - dx); left = rect.right - width; }
+        if (direction.includes("s")) height = Math.max(200, rect.height + dy);
+        if (direction.includes("n")) { height = Math.max(200, rect.height - dy); top = rect.bottom - height; }
+        Object.assign(win.style, { width: `${width}px`, height: `${height}px`, left: `${left}px`, top: `${top}px` });
+      };
+      const onUp = () => {
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+        document.removeEventListener("pointercancel", onUp);
+        window.removeEventListener("blur", onUp);
+        win.classList.remove("is-resizing");
+      };
+      win.classList.add("is-resizing");
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+      document.addEventListener("pointercancel", onUp);
+      window.addEventListener("blur", onUp, { once: true });
+    });
+    handle.addEventListener("keydown", (event) => {
+      const delta = { ArrowLeft: [-12, 0], ArrowRight: [12, 0], ArrowUp: [0, -12], ArrowDown: [0, 12] }[event.key];
+      if (!delta || win.classList.contains("fullscreen")) return;
+      event.preventDefault();
+      const rect = win.getBoundingClientRect();
+      const width = Math.max(320, rect.width + delta[0]);
+      const height = Math.max(200, rect.height + delta[1]);
+      const left = direction.includes("w") ? rect.right - width : rect.left;
+      const top = direction.includes("n") ? rect.bottom - height : rect.top;
+      Object.assign(win.style, { width: `${width}px`, height: `${height}px`, left: `${left}px`, top: `${top}px` });
+      focusWindow(win.dataset.id);
+    });
+    win.appendChild(handle);
+  });
+}
+
+function registerPreviewWindow(win) {
+  if (!win) return;
+  addWindowResizeHandles(win);
+  win.classList.add("is-entering");
+  requestAnimationFrame(() => {
+    win.classList.remove("is-entering");
+    focusWindow(win.dataset.id);
+  });
+}
+
+function animateWindowOut(win, className, finish) {
+  if (!win || win.classList.contains(className)) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    finish();
+    return;
+  }
+  win.classList.add(className);
+  setTimeout(() => {
+    if (!win.isConnected) return;
+    win.classList.remove(className);
+    finish();
+  }, 160);
+}
+
+previewContainer?.addEventListener("pointerdown", (event) => {
+  const win = event.target.closest(".floating-window");
+  if (win) focusWindow(win.dataset.id);
+});
+
 function featherSvg(name, className = "") {
   const icon = window.feather?.icons?.[name];
   if (!icon) return `<span class="icon-fallback ${className}" aria-hidden="true">•</span>`;
@@ -633,7 +733,9 @@ function renderFolder(node) {
 
 function startDrag(e, id) {
   const el = windows[id];
-  if (!el) return;
+  if (!el || el.classList.contains("fullscreen") || e.button !== 0 || e.target.closest(".buttons, .window-resize-handle")) return;
+  e.preventDefault();
+  focusWindow(id);
 
   const startX = e.clientX;
   const startY = e.clientY;
@@ -798,22 +900,29 @@ async function confirmDeleteFile() {
 
 function closeWindow(id) {
   const win = windows[id];
-  if (win) {
-    win.remove();
-    delete windows[id];
-    updateTaskbar();
-    syncWorkspaceEmptyState();
+  if (win && !win.classList.contains("is-closing")) {
+    animateWindowOut(win, "is-closing", () => {
+      if (windows[id] !== win) return;
+      win.remove();
+      delete windows[id];
+      updateTaskbar();
+      syncWorkspaceEmptyState();
+    });
   }
 }
 
 function minimizeWindow(id) {
   const win = windows[id];
-  if (win) {
-    win.style.display = "none";
-    updateTaskbar();
-    syncWorkspaceEmptyState();
+  if (win && win.style.display !== "none") {
+    animateWindowOut(win, "is-minimizing", () => {
+      if (windows[id] !== win) return;
+      win.style.display = "none";
+      updateTaskbar();
+      syncWorkspaceEmptyState();
+    });
   }
 }
+
 function showTaskbarContextMenu(x, y, id) {
   const menu = document.getElementById("taskbarContextMenu");
   menu.innerHTML = `
@@ -833,7 +942,8 @@ document.addEventListener("click", () => {
 function restoreFromTaskbar(id) {
   const win = windows[id];
   if (win) {
-    win.style.display = "block";
+    win.style.display = "flex";
+    focusWindow(id);
     updateTaskbar();
     syncWorkspaceEmptyState();
   }
@@ -852,57 +962,46 @@ function updateTaskbar() {
   taskbar.innerHTML = "";
 
   for (const [id, el] of Object.entries(windows)) {
-  if (el.style.display === "none") {
+    if (el.style.display !== "none") continue;
     const icon = document.createElement("div");
     icon.className = "task-icon";
     icon.dataset.name = el.querySelector(".title")?.textContent || "File";
     icon.innerHTML = featherSvg("file-text");
-
-    icon.onclick = () => {
-      el.style.display = "block";
-      updateTaskbar();
+    icon.onclick = () => restoreFromTaskbar(id);
+    icon.oncontextmenu = (event) => {
+      event.preventDefault();
+      showTaskbarContextMenu(event.pageX, event.pageY, id);
     };
-
-    icon.oncontextmenu = (e) => {
-      e.preventDefault();
-      showTaskbarContextMenu(e.pageX, e.pageY, id);
-    };
-
     taskbar.appendChild(icon);
   }
 }
-	}
+
 function toggleFullscreen(id, forceFull = false) {
   const w = windows[id];
   if (!w) return;
 
   const isFullscreen = w.classList.contains("fullscreen");
 
-  if (forceFull && !isFullscreen) {
-    w.classList.add("fullscreen");
-    return;
-  }
+  if (forceFull && isFullscreen) return;
 
+  w.classList.add("is-geometry-transitioning");
   if (isFullscreen) {
     w.classList.remove("fullscreen");
-
-    // ✅ Remove mobile override styles
-    w.style.removeProperty("top");
-    w.style.removeProperty("left");
-
-    // ✅ Then set fallback desktop positions
-    w.style.top = "100px";
-    w.style.left = "100px";
-    w.style.width = "80vw";
-    w.style.height = "80vh";
+    const previousBounds = windowRestoreBounds.get(w);
+    if (previousBounds) Object.assign(w.style, previousBounds);
+    windowRestoreBounds.delete(w);
   } else {
+    windowRestoreBounds.set(w, { top: w.style.top, left: w.style.left, width: w.style.width, height: w.style.height });
     w.classList.add("fullscreen");
-    w.style.top = "0";
-    w.style.left = "0";
-    w.style.width = "100vw";
-    w.style.height = "100vh";
   }
+  focusWindow(id);
+  setTimeout(() => w.classList.remove("is-geometry-transitioning"), 220);
 }
+
+/*
+ * The following preview/file handlers intentionally remain Ada-owned. The window layer
+ * wraps these flows; it does not replace their file routing or rendering behavior.
+ */
 
 
 function showContextMenu(x, y) {
@@ -970,6 +1069,7 @@ function openPreview(path, filename) {
   `;
   previewContainer.appendChild(win);
   windows[id] = win;
+  registerPreviewWindow(win);
   syncWorkspaceEmptyState();
   if (window.matchMedia("(max-width: 768px)").matches) setFileDrawerOpen(false);
 
