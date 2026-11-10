@@ -19,6 +19,13 @@
           "path": "docs/theme-compatibility.md",
           "sha": "b686f2cdc698c08e60d3c18cbdaf35febf271758",
           "mime": "text/markdown"
+        },
+        {
+          "type": "file",
+          "name": "ux-redesign-baseline.md",
+          "path": "docs/ux-redesign-baseline.md",
+          "sha": "802dd4076a4055814a08be4ad41e9939e4b08a7e",
+          "mime": "text/markdown"
         }
       ]
     },
