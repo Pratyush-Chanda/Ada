@@ -9,7 +9,7 @@
   <DisplayName DefaultValue="Ada for Office" />
   <Description DefaultValue="An Ada companion task pane for Word, Excel, and PowerPoint." />
   <IconUrl DefaultValue="https://ada-newux.vercel.app/office-addin/icons/ada-32.png" />
-  <HighResolutionIconUrl DefaultValue="https://ada-newux.vercel.app/office-addin/icons/ada-80.png" />
+  <HighResolutionIconUrl DefaultValue="https://ada-newux.vercel.app/office-addin/icons/ada-64.png" />
   <SupportUrl DefaultValue="https://ada-newux.vercel.app/" />
   <AppDomains>
     <AppDomain>https://ada-newux.vercel.app</AppDomain>
