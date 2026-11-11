@@ -1,8 +1,8 @@
 # Ada UX redesign audit and behavior-preservation baseline
 
 **Branch:** `newux`  
-**Audit date:** 2026-11-10  
-**Scope:** The first two authorized redesign steps: audit the current implementation against the full brief, then establish the Ada behavior that later window/UI changes must preserve.
+**Audit date:** 2026-11-10; **updated:** 2026-11-11  
+**Scope:** The initial redesign audit and behavior-preservation baseline, with follow-on v20 window-system refinement and Office Add-in implementation.
 
 ## Current implementation against the brief
 
@@ -24,7 +24,7 @@ The reference implementations in `/tmp/ros-webarcade-ref/initrd/init/modules/win
 
 The branch contains a custom Mozilla PDF.js canvas viewer in `bin/pdf-viewer.js`, intended for direct PDF previews and Markdown PDF embeds so the browser's native PDF viewer is not used. Regression coverage should verify both entry points and confirm there is no native-viewer fallback.
 
-An actual Office-hosted add-in now lives in `office-addin/`. Its XML manifest targets Word, Excel, and PowerPoint, uses the minimum `ReadDocument` permission, and loads a task pane hosted at the `newux` Vercel origin. The task pane loads Microsoft's Office.js CDN and initializes with `Office.onReady()`. It displays the Office host and platform and, when available, a locally derived filename; it does not transmit document contents to Ada. The manifest is downloadable from Ada's **More actions → Install Ada for Office** menu entry. The XML passes Microsoft's manifest validator. [3] [4] [5] [6] [7]
+An actual Office-hosted add-in now lives in `office-addin/`. Its XML manifest targets Word, Excel, and PowerPoint, uses the minimum `ReadDocument` permission, and loads a task pane hosted at the `newux` Vercel origin. The task pane loads Microsoft's Office.js CDN and initializes with `Office.onReady()`. It displays the Office host and platform and, when available, a locally derived filename; it does not transmit document contents to Ada. The manifest is downloadable from Ada's **More actions → Install Ada for Office** menu entry. Microsoft's production-level manifest validator accepts the XML and deployed icon URLs. [3] [4] [5] [6] [7]
 
 This add-in is separate from Ada's standalone file preview. Office itself renders the open Office document inside Word, Excel, or PowerPoint; adding Office.js does not make Ada's browser page a general-purpose Office viewer. Ada's in-app preview routing remains `docx-preview` for `.docx`, SheetJS for spreadsheets, and slide-text extraction for `.pptx`; completeness for legacy `.doc`, `.xls`, and `.ppt` remains a separate viewer issue. [1] [2]
 
@@ -43,9 +43,9 @@ The branch's existing unit checks cover search and theme compatibility plus the 
 
 ## Browser and deployment findings
 
-The provided deployment, `https://ada-newux.vercel.app`, was checked directly in a browser. A no-store page request still served `bin/style.css?v=13`, `bin/app.js?v=13`, and `bin/mobile.js?v=13`; its HTML has the old toolbar and no `#fileDrawer`. At the time of that audit check, the local `newux` source was at cache version 19 and contained the new drawer shell. The follow-on window refinement bumped the cache to v20; adding the Office install entry advances the shell and cache to v21. The deployment's `/api/config` reports the Ada repository and `GITHUB_BRANCH=newux`, so the live page is not currently a reliable validation target for the checked-out `newux` UI; its deployed HTML/assets need to be brought into sync.
+The provided deployment, `https://ada-newux.vercel.app`, initially lagged behind: the first audit saw v13 assets while local source was at v19. After the `newux` pushes, Vercel now serves v21 CSS/app/mobile assets. `/api/config` reports `Pratyush-Chanda/Ada` and `GITHUB_BRANCH=newux`; the live root, Office manifest, task-pane, and 32px/64px icons all return HTTP 200, and the file tree includes `office-addin/`.
 
-On that deployed page, searching for `README` returned one result and opening it recorded a Recently Opened entry. The preview then displayed `Error: HTTP 503`. A direct request to `/api/raw?path=README.md` returned `503` with `{"error":"GITHUB_PAT is not configured."}`. This is a Vercel environment/configuration blocker, not a PDF/Office viewer failure. The page search and preview error were handled in the UI; no page-level JavaScript exception was identified in the captured browser output. A valid server-side `GITHUB_PAT` must be configured in the Vercel project before protected/raw file previews can be validated there.
+The initial deployment check also saw an HTTP 503 on a README preview and a `GITHUB_PAT is not configured` response. The latest `/api/raw?path=README.md` request returns HTTP 200 with README content. This confirms that the tested public read path is currently healthy, but it does not establish that protected routes or mutating GitHub actions are configured. The live task pane loads Office.js in a browser and shows the expected no-host state; Microsoft's production manifest validator accepts the manifest and its live assets. Actual sideloading and behavior inside Word, Excel, or PowerPoint remain untested until an Office host is available.
 
 ## Regression baseline for subsequent work
 
@@ -53,14 +53,14 @@ Before and after changing the shell or window manager, verify these user-facing 
 
 1. **Startup and navigation:** configuration/tree loading, root and nested folders, breadcrumbs, parent navigation, empty folders, and loading/error feedback.
 2. **Search and history:** filename/path matching, keyboard shortcut, result open, search dismissal, Recently Opened persistence, and reopening a recent item.
-3. **Preview routing:** representative text/Markdown/image/Office/PDF files; correct file-type dispatch; unsupported/error state; no accidental native PDF viewer.
+3. **Preview routing and Office Add-in:** representative text/Markdown/image/Office/PDF files; correct file-type dispatch; unsupported/error state; no accidental native PDF viewer. Sideload the add-in in Word, Excel, and PowerPoint and verify host/filename metadata and that document contents stay in Office.
 4. **Window interactions:** open multiple previews, drag, focus/raise, resize, minimize, restore from taskbar, maximize/restore size, close, and sensible behavior with long titles/content.
 5. **Responsive behavior:** toolbar and drawer at 390px and 320px widths; mobile window sizing, scrollability, and no clipped controls.
 6. **Themes and account UI:** light/dark and custom-theme selection remain intact; theme CSS does not make the redesigned default unusable; account/admin visibility continues to respect current permissions.
 7. **File actions and safety:** confirm download behavior. Exercise upload/delete/remote mutations only with a safe test repository or controlled fixtures.
 8. **Assets and caching:** deployed HTML, CSS, scripts, and service worker all refer to the same build/version; hard reload and a fresh session show the same shell.
 
-The Vercel deployment's current v13 assets and missing `GITHUB_PAT` prevent it from serving as the end-to-end regression target for the `newux` UI until those deployment issues are corrected. Local/isolated-browser verification should continue in the meantime.
+Vercel now serves the v21 `newux` UI and the Office Add-in URLs. Remaining end-to-end checks are sideloading inside a real Office host, exercising host-specific filename behavior, and testing protected or mutating GitHub actions only with a safe fixture.
 
 ## References
 
