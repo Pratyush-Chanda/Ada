@@ -24,7 +24,25 @@
           "type": "file",
           "name": "ux-redesign-baseline.md",
           "path": "docs/ux-redesign-baseline.md",
-          "sha": "8b25dbd9e2fbca0ff4fbea5473fdf1fdc8c23436",
+          "sha": "58f8bf97a394c9f96dc7e4b2dcaf5a713fc9892c",
+          "mime": "text/markdown"
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "office-addin",
+      "children": [
+        {
+          "type": "folder",
+          "name": "icons",
+          "children": []
+        },
+        {
+          "type": "file",
+          "name": "README.md",
+          "path": "office-addin/README.md",
+          "sha": "02c6126e0d7675287a11d24a209ba10ab02214c7",
           "mime": "text/markdown"
         }
       ]
