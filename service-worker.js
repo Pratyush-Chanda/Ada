@@ -5,7 +5,7 @@
 //   - GitHub API calls → Network-only (never cache)
 //   - Everything else → Network-first, fall back to cache, fall back to offline page
 
-const CACHE_VERSION = 'webman-v20';
+const CACHE_VERSION = 'webman-v21';
 const OFFLINE_PAGE  = 'offline.html';
 
 const APP_SHELL = [
@@ -14,7 +14,7 @@ const APP_SHELL = [
   'offline.html',
   'manifest.json',
   'favicon.png',
-  'bin/style.css?v=20',
+  'bin/style.css?v=21',
   'bin/theme-compat.js',
   'bin/theme-runtime.js',
   'bin/themes/ada-default.theme.css',
@@ -22,10 +22,10 @@ const APP_SHELL = [
   'bin/themes/ada-contrast.theme.css',
   'bin/file-search.js?v=13',
   'bin/pdf-viewer.js?v=19',
-  'bin/app.js?v=20',
+  'bin/app.js?v=21',
   'bin/auth.js?v=19',
   'bin/upload.js?v=19',
-  'bin/mobile.js?v=20',
+  'bin/mobile.js?v=21',
   'bin/markdown.js?v=19',
   'bin/md-init.js',
   'bin/obsidian-markdown-it.js?v=19',
@@ -108,7 +108,24 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // 3. Top-level navigation → network first, inject COOP/COEP, fallback offline page
+  // 3. Office task pane/assets → network first, cache successful responses, and
+  //    deliberately skip the app-shell COOP/COEP header injection below.
+  if (url.pathname.includes('/office-addin/')) {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          if (response.ok && request.method === 'GET') {
+            const clone = response.clone();
+            caches.open(CACHE_VERSION).then(cache => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // 4. Top-level navigation → network first, inject COOP/COEP, fallback offline page
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
@@ -129,7 +146,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // 4. App shell assets → cache first + background update
+  // 5. App shell assets → cache first + background update
   if (APP_SHELL_URLS.has(request.url) || APP_SHELL.includes(url.pathname.replace(/^\//, ''))) {
     event.respondWith(
       caches.match(request).then(cached => {
@@ -148,7 +165,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // 5. Everything else → network first, then cache, then offline
+  // 6. Everything else → network first, then cache, then offline
   event.respondWith(
     fetch(request)
       .then(res => {
