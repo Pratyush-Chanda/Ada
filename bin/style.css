@@ -2663,6 +2663,60 @@ html[data-theme-mode="dark"] .workspace-browse-button { color: #1f1f1f; backgrou
 }
 .title-bar button:hover { background: var(--hover); }
 .preview-body { padding: 28px; }
+.office-web-preview {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  background: var(--item);
+}
+.office-web-preview__controls {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.office-web-preview__status {
+  flex: 1;
+  min-width: 0;
+  color: var(--fg);
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: .78;
+}
+.office-web-preview__fallback {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg);
+  background: var(--item);
+  font: 500 12px var(--font-sans);
+  cursor: pointer;
+}
+.office-web-preview__fallback:hover { background: var(--hover); }
+.office-web-preview__fallback:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.office-web-preview__fallback:disabled { cursor: progress; opacity: .65; }
+.office-web-preview__fallback svg { width: 16px; height: 16px; stroke-width: 1.8; }
+.office-web-preview__frame {
+  display: block;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: #fff;
+}
 .floating-window .window-resize-handle {
   position: absolute;
   z-index: 5;

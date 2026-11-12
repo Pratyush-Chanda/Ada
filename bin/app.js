@@ -1083,7 +1083,116 @@ function openPreview(path, filename) {
   }
 }
 
-async function fetchFileContent(path, filename, container) {
+const officeViewerPublicRepoChecks = new Map();
+
+async function isPublicGitHubRepository(repo) {
+  const fullName = String(repo || "").trim();
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(fullName)) return false;
+
+  const cacheKey = fullName.toLowerCase();
+  if (!officeViewerPublicRepoChecks.has(cacheKey)) {
+    const check = (async () => {
+      try {
+        const encodedRepo = fullName.split("/").map(encodeURIComponent).join("/");
+        const response = await fetch(`https://api.github.com/repos/${encodedRepo}`, {
+          headers: { Accept: "application/vnd.github+json" },
+          credentials: "omit",
+          cache: "no-store",
+        });
+        if (!response.ok) return false;
+        const metadata = await response.json();
+        return metadata.full_name?.toLowerCase() === cacheKey && metadata.private === false;
+      } catch (_) {
+        return false;
+      }
+    })();
+    officeViewerPublicRepoChecks.set(cacheKey, check);
+  }
+  return officeViewerPublicRepoChecks.get(cacheKey);
+}
+
+function buildPublicOfficeSourceUrl(path) {
+  const repo = String(appConfig.GITHUB_REPO || "").trim();
+  const branch = String(appConfig.GITHUB_BRANCH || "").trim();
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo) || !branch) return null;
+
+  const encodePathSegments = (value) => value.split("/").map(encodeURIComponent).join("/");
+  const encodedRepo = encodePathSegments(repo);
+  const encodedBranch = encodePathSegments(branch);
+  const rawOrigin = "https://raw.githubusercontent.com";
+  const expectedPrefix = `/${encodedRepo}/${encodedBranch}/`;
+  let repoPath = String(path || "").trim();
+
+  if (/^https?:\/\//i.test(repoPath)) {
+    let rawUrl;
+    try { rawUrl = new URL(repoPath); } catch (_) { return null; }
+    if (rawUrl.origin !== rawOrigin || rawUrl.search || rawUrl.hash || !rawUrl.pathname.startsWith(expectedPrefix)) return null;
+    try {
+      repoPath = rawUrl.pathname.slice(expectedPrefix.length).split("/").map(decodeURIComponent).join("/");
+    } catch (_) {
+      return null;
+    }
+  }
+
+  repoPath = repoPath.replace(/\\/g, "/").replace(/^\/+/, "");
+  const pathParts = repoPath.split("/");
+  if (!repoPath || pathParts.some((part) => !part || part === "." || part === "..")) return null;
+  return `${rawOrigin}/${encodedRepo}/${encodedBranch}/${encodePathSegments(repoPath)}`;
+}
+
+async function getPublicOfficeSourceUrl(path) {
+  const repo = String(appConfig.GITHUB_REPO || "").trim();
+  if (!await isPublicGitHubRepository(repo)) return null;
+  return buildPublicOfficeSourceUrl(path);
+}
+
+function renderOfficeWebPreview(path, filename, container, sourceUrl) {
+  container.style.cssText = "padding:0;overflow:hidden;display:flex;flex-direction:column;flex-grow:1;min-height:0;";
+
+  const shell = document.createElement("section");
+  shell.className = "office-web-preview";
+
+  const controls = document.createElement("div");
+  controls.className = "office-web-preview__controls";
+
+  const status = document.createElement("span");
+  status.className = "office-web-preview__status";
+  status.setAttribute("role", "status");
+  status.setAttribute("aria-live", "polite");
+  status.textContent = "Loading Microsoft Office for the web. Microsoft will fetch this public file; use Ada's reader if it fails.";
+
+  const fallbackButton = document.createElement("button");
+  fallbackButton.type = "button";
+  fallbackButton.className = "office-web-preview__fallback";
+  fallbackButton.dataset.officeViewerFallback = "true";
+  fallbackButton.setAttribute("aria-label", "Use Ada's built-in file preview");
+  fallbackButton.innerHTML = `${featherSvg("file-text")}<span>Use Ada reader</span>`;
+  fallbackButton.addEventListener("click", () => {
+    fallbackButton.disabled = true;
+    fetchFileContent(path, filename, container, { skipOfficeWeb: true });
+  });
+
+  const frame = document.createElement("iframe");
+  frame.className = "office-web-preview__frame";
+  frame.title = `Microsoft Office for the web preview of ${filename}`;
+  frame.referrerPolicy = "no-referrer";
+  frame.allowFullscreen = true;
+  const viewerUrl = new URL("https://view.officeapps.live.com/op/embed.aspx");
+  viewerUrl.searchParams.set("src", sourceUrl);
+  frame.src = viewerUrl.toString();
+  frame.addEventListener("load", () => {
+    status.textContent = "Microsoft's viewer page loaded. If the document is blank or shows an error, use Ada's reader.";
+  });
+  frame.addEventListener("error", () => {
+    status.textContent = "Microsoft's viewer could not load. Use Ada's reader instead.";
+  });
+
+  controls.append(status, fallbackButton);
+  shell.append(controls, frame);
+  container.replaceChildren(shell);
+}
+
+async function fetchFileContent(path, filename, container, options = {}) {
   const ext = (filename.includes('.') ? filename : path).split('.').pop().toLowerCase();
 
   container.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;"><span class="loader"></span> Loading...</div>';
@@ -1109,6 +1218,14 @@ async function fetchFileContent(path, filename, container) {
     } else if (/\.(docx?|xlsx?|pptx?)$/i.test(filename.includes('.') ? filename : path)) {
       const fileExt = (filename.includes('.') ? filename : path).split('.').pop().toLowerCase();
       container.style.cssText = 'padding:0;overflow:hidden;display:flex;flex-direction:column;flex-grow:1;min-height:0;';
+
+      if (!options.skipOfficeWeb) {
+        const publicSourceUrl = await getPublicOfficeSourceUrl(path);
+        if (publicSourceUrl) {
+          renderOfficeWebPreview(path, filename, container, publicSourceUrl);
+          return;
+        }
+      }
 
       const response = await fetch(fetchUrl(path));
       if (!response.ok) throw new Error(`HTTP ${response.status}`);

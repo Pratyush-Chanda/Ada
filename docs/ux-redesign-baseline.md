@@ -26,7 +26,11 @@ The branch contains a custom Mozilla PDF.js canvas viewer in `bin/pdf-viewer.js`
 
 An actual Office-hosted add-in now lives in `office-addin/`. Its XML manifest targets Word, Excel, and PowerPoint, uses the minimum `ReadDocument` permission, and loads a task pane hosted at the `newux` Vercel origin. The task pane loads Microsoft's Office.js CDN and initializes with `Office.onReady()`. It displays the Office host and platform and, when available, a locally derived filename; it does not transmit document contents to Ada. The manifest is downloadable from Ada's **More actions → Install Ada for Office** menu entry. Microsoft's production-level manifest validator accepts the XML and deployed icon URLs. [3] [4] [5] [6] [7]
 
-This add-in is separate from Ada's standalone file preview. Office itself renders the open Office document inside Word, Excel, or PowerPoint; adding Office.js does not make Ada's browser page a general-purpose Office viewer. Ada's in-app preview routing remains `docx-preview` for `.docx`, SheetJS for spreadsheets, and slide-text extraction for `.pptx`; completeness for legacy `.doc`, `.xls`, and `.ppt` remains a separate viewer issue. [1] [2]
+Ada's standalone preview now attempts Microsoft's public Office Web Viewer for tracked `.doc`, `.docx`, `.xls`, `.xlsx`, `.ppt`, and `.pptx` files only after an anonymous GitHub API check confirms the configured repository is public. It gives Microsoft a raw GitHub URL, not Ada's PAT-backed `/api/raw` proxy or an authenticated URL. The preview always keeps a visible **Use Ada reader** action; cross-origin restrictions mean Ada cannot reliably detect an internal viewer error from the iframe's `load` event. The Microsoft endpoint is best-effort and is not documented as a supported general-purpose embedding API, so the existing `docx-preview`, SheetJS, and PowerPoint-text fallback remains important. [8] [9] [10]
+
+The Office.js add-in is still a separate feature: Office itself renders the open document inside Word, Excel, or PowerPoint. Office.js does not turn Ada's browser page into a general-purpose Office viewer. [1] [2]
+
+Implementation and reliability notes for this public-only embed are in `docs/office-web-viewer.md`.
 
 ## Ada behavior to preserve
 
@@ -53,7 +57,7 @@ Before and after changing the shell or window manager, verify these user-facing 
 
 1. **Startup and navigation:** configuration/tree loading, root and nested folders, breadcrumbs, parent navigation, empty folders, and loading/error feedback.
 2. **Search and history:** filename/path matching, keyboard shortcut, result open, search dismissal, Recently Opened persistence, and reopening a recent item.
-3. **Preview routing and Office Add-in:** representative text/Markdown/image/Office/PDF files; correct file-type dispatch; unsupported/error state; no accidental native PDF viewer. Sideload the add-in in Word, Excel, and PowerPoint and verify host/filename metadata and that document contents stay in Office.
+3. **Preview routing and Office Add-in:** representative text/Markdown/image/Office/PDF files; public Office files attempt the Microsoft embed and retain the visible Ada-reader fallback; private or unverified repositories skip the embed; correct file-type dispatch; unsupported/error state; no accidental native PDF viewer. Sideload the add-in in Word, Excel, and PowerPoint and verify host/filename metadata and that document contents stay in Office.
 4. **Window interactions:** open multiple previews, drag, focus/raise, resize, minimize, restore from taskbar, maximize/restore size, close, and sensible behavior with long titles/content.
 5. **Responsive behavior:** toolbar and drawer at 390px and 320px widths; mobile window sizing, scrollability, and no clipped controls.
 6. **Themes and account UI:** light/dark and custom-theme selection remain intact; theme CSS does not make the redesigned default unusable; account/admin visibility continues to respect current permissions.
@@ -71,3 +75,6 @@ Vercel now serves the v21 `newux` UI and the Office Add-in URLs. Remaining end-t
 [5]: https://learn.microsoft.com/en-us/office/dev/add-ins/develop/initialize-add-in "Initialize an Office Add-in"
 [6]: https://learn.microsoft.com/en-us/office/dev/add-ins/develop/add-in-manifests "Office Add-in manifest formats and hosting"
 [7]: https://learn.microsoft.com/en-us/office/dev/add-ins/testing/troubleshoot-manifest "Validate an Office Add-in manifest"
+[8]: https://learn.microsoft.com/en-us/office365/servicedescriptions/office-online-service-description/office-online-service-description "Office for the web service description"
+[9]: https://learn.microsoft.com/en-us/answers/questions/5883721/microsoft-office-online-viewer-does-not-load-docum "Microsoft Learn Q&A on public Office Viewer reliability"
+[10]: https://learn.microsoft.com/en-ie/answers/questions/5973167/office-online-viewer-fails-to-open-powerpoint-file "Microsoft Learn Q&A on Office Viewer retrieval behavior"
