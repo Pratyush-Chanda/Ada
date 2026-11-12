@@ -1,8 +1,8 @@
 # Ada UX redesign audit and behavior-preservation baseline
 
 **Branch:** `newux`  
-**Audit date:** 2026-11-10; **updated:** 2026-11-11  
-**Scope:** The initial redesign audit and behavior-preservation baseline, with follow-on v20 window-system refinement and Office Add-in implementation.
+**Audit date:** 2026-11-10; **updated:** 2026-11-12
+**Scope:** The initial redesign audit and behavior-preservation baseline, with follow-on v20 window-system refinement, Office Add-in, public Office Web Viewer, and DOCX fallback corrections.
 
 ## Current implementation against the brief
 
@@ -43,13 +43,15 @@ The visual redesign must keep Ada's existing responsibilities and data flows rat
 - Keep the built-in and imported theme systems, theme-mode switching, and applicable account/admin UI integrations.
 - Preserve the upload flow, authentication/authorization boundaries, file downloads, and any remote file-management actions. Test mutating actions only against a safe test target; do not use production data for regression checks.
 
-The branch's existing unit checks cover search and theme compatibility plus the Python file-tree tooling. They passed before and after the window refinement (15 JavaScript tests and 11 Python tests). A local browser check also confirmed that dark mode toggles and the original system preference can be restored. For the add-in, browser verification confirmed that Office.js loads outside an Office host and the page reports that host absence clearly; the menu link and manifest return HTTP 200, and the Office task-pane route does not receive Ada's COOP/COEP headers. An actual Word/Excel/PowerPoint host was not available for in-Office sideload testing. No automated end-to-end UI suite was found, so device-specific shell/window checks still need browser verification at desktop and narrow mobile widths.
+The branch's existing unit checks cover search and theme compatibility plus the Python file-tree tooling. After the Office viewer changes, all 15 JavaScript tests and 11 Python tests passed again; direct URL-builder checks also confirmed traversal, untrusted-origin, and wrong-branch paths are rejected. A local browser check confirmed dark-mode switching and restoration of the original system preference. For the add-in, browser verification confirmed that Office.js loads outside an Office host and the page reports that host absence clearly; the menu link and manifest return HTTP 200, and the Office task-pane route does not receive Ada's COOP/COEP headers. An actual Word/Excel/PowerPoint host was not available for in-Office sideload testing. No automated end-to-end UI suite was found, so device-specific shell/window checks still need browser verification at desktop and narrow mobile widths.
 
 ## Browser and deployment findings
 
-The provided deployment, `https://ada-newux.vercel.app`, initially lagged behind: the first audit saw v13 assets while local source was at v19. After the `newux` pushes, Vercel now serves v21 CSS/app/mobile assets. `/api/config` reports `Pratyush-Chanda/Ada` and `GITHUB_BRANCH=newux`; the live root, Office manifest, task-pane, and 32px/64px icons all return HTTP 200, and the file tree includes `office-addin/`.
+The provided deployment, `https://ada-newux.vercel.app`, initially lagged behind: the first audit saw v13 assets while local source was at v19. After the Office viewer commit, Vercel serves v22 CSS/app assets and a v22 service-worker cache; the mobile script remains v21. `/api/config` reports `Pratyush-Chanda/Ada` and `GITHUB_BRANCH=newux`; the live root, Office manifest, task-pane, and 32px/64px icons all return HTTP 200, and the file tree includes `office-addin/`.
 
 The initial deployment check also saw an HTTP 503 on a README preview and a `GITHUB_PAT is not configured` response. The latest `/api/raw?path=README.md` request returns HTTP 200 with README content. This confirms that the tested public read path is currently healthy, but it does not establish that protected routes or mutating GitHub actions are configured. The live task pane loads Office.js in a browser and shows the expected no-host state; Microsoft's production manifest validator accepts the manifest and its live assets. Actual sideloading and behavior inside Word, Excel, or PowerPoint remain untested until an Office host is available.
+
+The live v22 browser check opened a public DOCX through Microsoft's embed and confirmed the Ada-reader fallback is visible. Clicking that fallback exposed two existing DOCX integration defects: Ada expected `window.docxPreview` instead of the library's `window.docx.renderAsync` API, and JSZip loaded after docx-preview had initialized. The v23 source now uses the actual API and loads JSZip first; Vercel deployment and the repeat fallback test are pending.
 
 ## Regression baseline for subsequent work
 
@@ -64,7 +66,7 @@ Before and after changing the shell or window manager, verify these user-facing 
 7. **File actions and safety:** confirm download behavior. Exercise upload/delete/remote mutations only with a safe test repository or controlled fixtures.
 8. **Assets and caching:** deployed HTML, CSS, scripts, and service worker all refer to the same build/version; hard reload and a fresh session show the same shell.
 
-Vercel now serves the v21 `newux` UI and the Office Add-in URLs. Remaining end-to-end checks are sideloading inside a real Office host, exercising host-specific filename behavior, and testing protected or mutating GitHub actions only with a safe fixture.
+The last confirmed live build is v22, which serves the Office Web Viewer route and Ada fallback button. The v23 source fixes the DOCX fallback API name and CDN dependency order; its Vercel deployment and repeat DOCX fallback check are pending. Remaining end-to-end checks include sideloading inside a real Office host, exercising host-specific filename behavior, and testing protected or mutating GitHub actions only with a safe fixture.
 
 ## References
 

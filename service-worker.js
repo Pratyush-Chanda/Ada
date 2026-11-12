@@ -5,7 +5,7 @@
 //   - GitHub API calls → Network-only (never cache)
 //   - Everything else → Network-first, fall back to cache, fall back to offline page
 
-const CACHE_VERSION = 'webman-v22';
+const CACHE_VERSION = 'webman-v23';
 const OFFLINE_PAGE  = 'offline.html';
 
 const APP_SHELL = [
@@ -22,7 +22,7 @@ const APP_SHELL = [
   'bin/themes/ada-contrast.theme.css',
   'bin/file-search.js?v=13',
   'bin/pdf-viewer.js?v=19',
-  'bin/app.js?v=22',
+  'bin/app.js?v=23',
   'bin/auth.js?v=19',
   'bin/upload.js?v=19',
   'bin/mobile.js?v=21',

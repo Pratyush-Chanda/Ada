@@ -1232,13 +1232,14 @@ async function fetchFileContent(path, filename, container, options = {}) {
       const arrayBuffer = await response.arrayBuffer();
 
       if (fileExt === 'docx') {
-        // docx-preview — global is `docxPreview`
-        if (typeof docxPreview === 'undefined') throw new Error('docx-preview library not loaded');
+        // docx-preview@0.3.x exposes its browser API on `window.docx`.
+        const docxApi = window.docx || window.docxPreview;
+        if (!docxApi || typeof docxApi.renderAsync !== 'function') throw new Error('docx-preview library not loaded');
         const wrapper = document.createElement('div');
         wrapper.style.cssText = 'flex:1;overflow:auto;padding:20px;background:white;color:#000;';
         container.innerHTML = '';
         container.appendChild(wrapper);
-        await docxPreview.renderAsync(arrayBuffer, wrapper, null, {
+        await docxApi.renderAsync(arrayBuffer, wrapper, null, {
           className: 'docx-render',
           inWrapper: true,
           ignoreWidth: false,
