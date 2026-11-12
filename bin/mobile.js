@@ -63,71 +63,23 @@ function mobSheetAction(action) {
   if (action === 'download') downloadFile(fakeEvent, _mobSheetIndex);
   if (action === 'delete')   deleteFile(fakeEvent, _mobSheetIndex);
 }
-const mobileMin = {}; // id -> { name }
-
 function minimizeWindowMobile(id) {
   const w = windows[id]; if (!w) return;
   animateWindowOut(w, 'is-minimizing', () => {
     if (windows[id] !== w) return;
     w.style.display = 'none';
-    mobileMin[id] = { name: w.querySelector('.title')?.textContent || 'File' };
-    renderMobileMinStack();
     syncWorkspaceEmptyState();
   });
 }
 
-function restoreWindowMobile(id) {
-  // Minimise anything currently visible
-  for (const [wid, w] of Object.entries(windows)) {
-    if (w.style.display !== 'none') {
-      w.style.display = 'none';
-      mobileMin[wid] = { name: w.querySelector('.title')?.textContent || 'File' };
-    }
-  }
-  const w = windows[id];
-  if (w) { w.style.display = 'flex'; delete mobileMin[id]; focusWindow(id); }
-  renderMobileMinStack();
-  syncWorkspaceEmptyState();
-}
-
-function renderMobileMinStack() {
-  const stack = document.getElementById('mobileMinStack');
-  const dropdown = document.getElementById('mobHamburgerDropdown');
-  if (!isMobile) { stack.style.display = 'none'; return; }
-  const entries = Object.entries(mobileMin);
-  if (!entries.length) {
-    stack.style.display = 'none';
-    dropdown.classList.remove('open');
-    return;
-  }
-  stack.style.display = 'flex';
-  // Update badge count on hamburger button
-  const btn = document.getElementById('mobHamburgerBtn');
-  btn.innerHTML = `${featherSvg("menu")}<span class="mobile-min-count">${entries.length}</span>`;
-  // Rebuild dropdown items
-  dropdown.innerHTML = entries.map(([id, info]) =>
-    `<button class="mob-min-btn" onclick="restoreWindowMobile('${id}')">${featherSvg("file-text")} <span>${info.name}</span></button>`
-  ).join('');
-}
-
-function toggleMobHamburger() {
-  const dropdown = document.getElementById('mobHamburgerDropdown');
-  dropdown.classList.toggle('open');
-}
-
-// Close the hamburger dropdown when tapping outside it
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('#mobileMinStack')) {
-    document.getElementById('mobHamburgerDropdown')?.classList.remove('open');
-  }
-});
-
-// ===== OVERRIDE openPreview FOR MOBILE MINIMIZE SUPPORT =====
+// ===== OVERRIDE openPreview FOR MOBILE WINDOW GEOMETRY =====
 function openPreview(path, filename) {
+  if (restoreExistingPreview(path)) return;
   const id = 'preview-' + (++previewId);
   const win = document.createElement('div');
   win.className = 'floating-window';
   win.dataset.adaComponent = 'preview-window';
+  win.dataset.filePath = path;
 
   if (isMobile) {
     win.style.cssText = 'top:var(--topbar-height);left:0;width:100vw;height:calc(100dvh - var(--topbar-height));border-radius:0;';
@@ -158,9 +110,8 @@ function openPreview(path, filename) {
   if (window.matchMedia("(max-width: 768px)").matches) setFileDrawerOpen(false);
   fetchFileContent(path, filename, document.getElementById(id + '-body'));
 
-  if (!isMobile) {
-    updateTaskbar();
-    if (['md','markdown','pdf','html','htm','doc','docx','xls','xlsx','ppt','pptx'].includes(ext)) setTimeout(() => toggleFullscreen(id, true), 100);
+  if (!isMobile && ['md','markdown','pdf','html','htm','doc','docx','xls','xlsx','ppt','pptx'].includes(ext)) {
+    setTimeout(() => toggleFullscreen(id, true), 100);
   }
 }
 
@@ -173,14 +124,14 @@ function handlePreview() {
   contextMenu.style.display = 'none';
 }
 
-// ===== OVERRIDE closeWindow — handle mobile min stack =====
+// ===== OVERRIDE closeWindow =====
 function closeWindow(id) {
   const w = windows[id];
   if (!w || w.classList.contains('is-closing')) return;
   animateWindowOut(w, 'is-closing', () => {
     if (windows[id] !== w) return;
-    w.remove(); delete windows[id]; delete mobileMin[id];
-    isMobile ? renderMobileMinStack() : updateTaskbar();
+    w.remove();
+    delete windows[id];
     syncWorkspaceEmptyState();
   });
 }
@@ -192,34 +143,8 @@ function minimizeWindow(id) {
   animateWindowOut(w, 'is-minimizing', () => {
     if (windows[id] !== w) return;
     w.style.display = 'none';
-    updateTaskbar();
     syncWorkspaceEmptyState();
   });
-}
-
-// ===== OVERRIDE updateTaskbar — fix names + scrollable =====
-function updateTaskbar() {
-  if (isMobile) return;
-  const minimised = Object.entries(windows).filter(([,el]) => el.style.display === 'none');
-  if (!minimised.length) { taskbar.style.display = 'none'; taskbar.innerHTML = ''; return; }
-
-  taskbar.style.display = 'flex';
-  taskbar.style.overflowX = 'auto';
-  taskbar.style.flexWrap = 'nowrap';
-  taskbar.innerHTML = '';
-
-  for (const [id, el] of Object.entries(windows)) {
-    if (el.style.display !== 'none') continue;
-    const name = el.querySelector('.title')?.textContent || 'File';
-    const icon = document.createElement('div');
-    icon.className = 'task-icon';
-    icon.dataset.name = name;
-    icon.style.cssText = 'width:auto;padding:0 10px;gap:5px;font-size:12px;white-space:nowrap;display:flex;align-items:center;min-width:auto;';
-    icon.innerHTML = `${featherSvg('file-text')}<span>${name}</span>`;
-    icon.onclick = () => restoreFromTaskbar(id);
-    icon.oncontextmenu = e => { e.preventDefault(); showTaskbarContextMenu(e.pageX, e.pageY, id); };
-    taskbar.appendChild(icon);
-  }
 }
 
 // ===== INIT =====

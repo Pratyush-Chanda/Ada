@@ -6,7 +6,6 @@ const previewContainer = document.getElementById("previewContainer");
 const mobilePreview = document.getElementById("mobilePreview");
 const mobilePreviewContent = document.getElementById("mobilePreviewContent");
 const mobilePreviewTitle = document.getElementById("mobilePreviewTitle");
-const taskbar = document.getElementById("taskbar");
 const statusEl = document.getElementById("status");
 const fileSearchInput = document.getElementById("fileSearchInput");
 const clearFileSearchButton = document.getElementById("clearFileSearch");
@@ -153,6 +152,7 @@ if (window.matchMedia("(max-width: 768px)").matches) setFileDrawerOpen(false);
 function syncWorkspaceEmptyState() {
   const hasVisibleWindow = Object.values(windows).some((win) => win?.isConnected && win.style.display !== "none");
   if (workspaceEmptyState) workspaceEmptyState.hidden = hasVisibleWindow;
+  renderWorkspaceRecentFiles();
 }
 
 // Runtime config loaded from /api/config (populated from Vercel env vars).
@@ -283,6 +283,7 @@ async function fetchTree() {
     pathHistory = [];
     renderFolder(tree);
     updatePathNav();
+    renderWorkspaceRecentFiles();
 
     const fontPromise = new Promise((resolve) => {
   const testSpan = document.createElement("span");
@@ -402,6 +403,89 @@ function recordRecentFile(path, name) {
   } catch (_) {
     // Recent navigation is optional; private browsing or storage limits should not block previews.
   }
+  renderWorkspaceRecentFiles();
+  if (recentFilesOpen) renderRecentFiles();
+}
+
+function getRecentFileEntries() {
+  const saved = readRecentFiles();
+  if (!rootNode) return [];
+  const entries = saved.map((recent) => ({
+    recent,
+    result: fileSearchIndex.find((entry) => entry.node.type === "file" && entry.node.path === recent.path)
+  })).filter((item) => item.result);
+
+  if (entries.length !== saved.length) {
+    try {
+      localStorage.setItem(RECENT_FILES_STORAGE_KEY, JSON.stringify(entries.map((item) => item.recent)));
+    } catch (_) {}
+  }
+  return entries;
+}
+
+function clearRecentFiles() {
+  try { localStorage.removeItem(RECENT_FILES_STORAGE_KEY); } catch (_) {}
+  renderWorkspaceRecentFiles();
+  if (recentFilesOpen) renderRecentFiles();
+}
+
+function openRecentFile(path) {
+  const entry = fileSearchIndex.find((item) => item.node.type === "file" && item.node.path === path);
+  if (!entry) {
+    showStatus("This recent file is no longer available.");
+    renderWorkspaceRecentFiles();
+    return;
+  }
+  recordRecentFile(entry.node.path, entry.node.name);
+  openPreview(entry.node.path, entry.node.name);
+}
+
+function renderWorkspaceRecentFiles() {
+  const list = document.getElementById("workspaceRecentFiles");
+  const clearButton = document.getElementById("workspaceClearRecents");
+  if (!list) return;
+
+  const entries = getRecentFileEntries();
+  if (clearButton) clearButton.disabled = entries.length === 0;
+  list.replaceChildren();
+
+  if (!entries.length) {
+    const empty = document.createElement("p");
+    empty.className = "workspace-recent-empty";
+    empty.textContent = "No recent files yet.";
+    list.appendChild(empty);
+    return;
+  }
+
+  for (const { recent, result } of entries) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "workspace-recent-item";
+    button.setAttribute("aria-label", `Open recently viewed file ${result.node.name || recent.name}, ${result.path}`);
+
+    const icon = document.createElement("span");
+    icon.className = "workspace-recent-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.innerHTML = getFileIcon(result.node);
+
+    const copy = document.createElement("span");
+    copy.className = "workspace-recent-copy";
+    const name = document.createElement("span");
+    name.className = "workspace-recent-name";
+    name.textContent = result.node.name || recent.name;
+    const path = document.createElement("span");
+    path.className = "workspace-recent-path";
+    path.textContent = result.path;
+    copy.append(name, path);
+
+    const openIcon = document.createElement("span");
+    openIcon.className = "workspace-recent-open";
+    openIcon.setAttribute("aria-hidden", "true");
+    openIcon.innerHTML = featherSvg("arrow-up-right");
+    button.append(icon, copy, openIcon);
+    button.addEventListener("click", () => openRecentFile(result.path));
+    list.appendChild(button);
+  }
 }
 
 function toggleRecentFiles() {
@@ -417,27 +501,25 @@ function toggleRecentFiles() {
 }
 
 function renderRecentFiles() {
-  const saved = readRecentFiles();
-  const entries = saved.map((recent) => ({
-    recent,
-    result: fileSearchIndex.find((entry) => entry.node.type === "file" && entry.node.path === recent.path)
-  })).filter((item) => item.result);
-
-  if (entries.length !== saved.length) {
-    try {
-      localStorage.setItem(RECENT_FILES_STORAGE_KEY, JSON.stringify(entries.map((item) => item.recent)));
-    } catch (_) {}
-  }
-
+  const entries = getRecentFileEntries();
   listView.replaceChildren();
   selected = null;
+  const heading = document.createElement("div");
+  heading.className = "recent-list-heading";
   const summary = document.createElement("div");
   summary.className = "search-results-meta";
   summary.setAttribute("role", "status");
   summary.textContent = entries.length
     ? `Recently opened · ${entries.length} ${entries.length === 1 ? "file" : "files"}`
     : "Recently opened · no files yet";
-  listView.appendChild(summary);
+  const clearButton = document.createElement("button");
+  clearButton.type = "button";
+  clearButton.className = "recent-clear-all";
+  clearButton.disabled = entries.length === 0;
+  clearButton.innerHTML = `${featherSvg("trash-2")}<span>Clear all</span>`;
+  clearButton.addEventListener("click", clearRecentFiles);
+  heading.append(summary, clearButton);
+  listView.appendChild(heading);
 
   if (!entries.length) {
     const empty = document.createElement("div");
@@ -905,7 +987,6 @@ function closeWindow(id) {
       if (windows[id] !== win) return;
       win.remove();
       delete windows[id];
-      updateTaskbar();
       syncWorkspaceEmptyState();
     });
   }
@@ -917,62 +998,8 @@ function minimizeWindow(id) {
     animateWindowOut(win, "is-minimizing", () => {
       if (windows[id] !== win) return;
       win.style.display = "none";
-      updateTaskbar();
       syncWorkspaceEmptyState();
     });
-  }
-}
-
-function showTaskbarContextMenu(x, y, id) {
-  const menu = document.getElementById("taskbarContextMenu");
-  menu.innerHTML = `
-    <button onclick="restoreFromTaskbar('${id}')">${featherSvg("maximize-2")} Restore</button>
-    <button onclick="minimizeWindow('${id}')">${featherSvg("minus")} Minimize</button>
-    <button onclick="closeWindow('${id}')">${featherSvg("x")} Close</button>
-  `;
-  menu.style.top = y + "px";
-  menu.style.left = x + "px";
-  menu.style.display = "flex";
-}
-
-document.addEventListener("click", () => {
-  document.getElementById("taskbarContextMenu").style.display = "none";
-});
-
-function restoreFromTaskbar(id) {
-  const win = windows[id];
-  if (win) {
-    win.style.display = "flex";
-    focusWindow(id);
-    updateTaskbar();
-    syncWorkspaceEmptyState();
-  }
-}
-
-function updateTaskbar() {
-  const minimized = Object.entries(windows).filter(([_, el]) => el.style.display === "none");
-  
-  if (minimized.length === 0) {
-    taskbar.style.display = "none";
-    taskbar.innerHTML = "";
-    return;
-  }
-
-  taskbar.style.display = "flex";
-  taskbar.innerHTML = "";
-
-  for (const [id, el] of Object.entries(windows)) {
-    if (el.style.display !== "none") continue;
-    const icon = document.createElement("div");
-    icon.className = "task-icon";
-    icon.dataset.name = el.querySelector(".title")?.textContent || "File";
-    icon.innerHTML = featherSvg("file-text");
-    icon.onclick = () => restoreFromTaskbar(id);
-    icon.oncontextmenu = (event) => {
-      event.preventDefault();
-      showTaskbarContextMenu(event.pageX, event.pageY, id);
-    };
-    taskbar.appendChild(icon);
   }
 }
 
@@ -1043,11 +1070,31 @@ function closeMobilePreview() {
   mobilePreviewContent.innerHTML = "";
 }
 
+function restoreExistingPreview(path) {
+  const match = Object.entries(windows).find(([, win]) => win?.isConnected && win.dataset.filePath === path);
+  if (!match) return false;
+
+  const [id, win] = match;
+  if (isMobile) {
+    for (const [otherId, otherWin] of Object.entries(windows)) {
+      if (otherId !== id && otherWin?.isConnected) otherWin.style.display = "none";
+    }
+  }
+  win.style.display = "flex";
+  win.classList.remove("is-minimizing", "is-closing", "is-entering");
+  focusWindow(id);
+  if (window.matchMedia("(max-width: 768px)").matches) setFileDrawerOpen(false);
+  syncWorkspaceEmptyState();
+  return true;
+}
+
 function openPreview(path, filename) {
+  if (restoreExistingPreview(path)) return;
   const id = 'preview-' + (++previewId);
   const win = document.createElement("div");
   win.className = "floating-window";
   win.dataset.adaComponent = "preview-window";
+  win.dataset.filePath = path;
   win.style.top = `${100 + previewId * 10}px`;
   win.style.left = `${100 + previewId * 10}px`;
   win.dataset.id = id;
@@ -1075,7 +1122,6 @@ function openPreview(path, filename) {
 
   const container = document.getElementById(id + "-body");
   fetchFileContent(path, filename, container);
-  updateTaskbar();
   
   // Auto fullscreen for markdown and PDF
   if (isFullScreen) {

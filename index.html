@@ -64,7 +64,7 @@
   <script src="https://www.google.com/recaptcha/api.js?render=6LcxfwktAAAAAFr3FmBO5LHM3m_j33369aSsOsOf" async defer></script>
   <!-- Modern Email + Password Auth System -->
   <script src="bin/modern-auth.js"></script>
-  <link rel="stylesheet" href="bin/style.css?v=22">
+  <link rel="stylesheet" href="bin/style.css?v=24">
   <script src="bin/md-init.js"></script>
 </head>
 <body>
@@ -84,7 +84,7 @@
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="mouse-pointer" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Click to open files</strong><span>Single-click any file to preview it in a floating window</span></div></div>
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="more-horizontal" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Right-click for options</strong><span>Right-click any file for Preview or Download options</span></div></div>
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="move" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Drag windows freely</strong><span>Hold and drag the title bar to reposition any window</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon"><i data-feather="minus" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Minimise to taskbar</strong><span>Use the minimize control — windows appear in the bottom bar</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="minus" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Keep windows minimized</strong><span>Minimized windows stay available; reopen them from Recently opened in the workspace</span></div></div>
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="search" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Find files quickly</strong><span>Search file and folder names across Ada; press Ctrl+K or ⌘K to jump to search</span></div></div>
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="folder" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Navigate folders</strong><span>Click a folder to open it, use the parent-folder action or breadcrumb to move around</span></div></div>
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="upload-cloud" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Upload files</strong><span>Choose More → Upload file to submit a file for admin review</span></div></div>
@@ -92,8 +92,7 @@
       </div>
       <div id="guideMobile" style="display:none">
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="smartphone" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Tap to open files</strong><span>Tap any file to open a full-screen preview</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon"><i data-feather="minus" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Minimise to corner button</strong><span>Use the minimize control — a floating button appears at the bottom-right</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon"><i data-feather="repeat" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Switch between open files</strong><span>Tap a minimised button to restore it; any open file auto-minimises</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="minus" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Keep windows minimized</strong><span>Minimized previews stay available; reopen one from Recently opened in the workspace</span></div></div>
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="search" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Find files quickly</strong><span>Search file and folder names across Ada</span></div></div>
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="folder" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Navigate folders</strong><span>Tap a folder to open, use the parent-folder action or breadcrumb to move around</span></div></div>
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="upload-cloud" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Upload files</strong><span>Choose More → Upload file to submit a file for review</span></div></div>
@@ -387,11 +386,6 @@
     </div>
   </div>
 
-  <!-- Mobile floating minimize stack -->
-  <div id="mobileMinStack">
-    <div id="mobHamburgerDropdown"></div>
-    <button id="mobHamburgerBtn" onclick="toggleMobHamburger()" title="Minimised windows">☰</button>
-  </div>
   <div id="vercelPopup">
     <div id="vercelPopupCard">
       <div id="vercelPopupIcon">⚡</div>
@@ -410,7 +404,6 @@
         <button id="fileDrawerToggle" class="toolbar-icon-button" type="button" aria-label="Browse files" title="Browse files" aria-controls="fileDrawer" aria-expanded="true">
           <i data-feather="menu" aria-hidden="true"></i>
         </button>
-        <a class="toolbar-brand" href="#" onclick="event.preventDefault();goToRoot()" aria-label="Ada home">Ada</a>
       </div>
       <div class="toolbar-search" role="search">
         <label class="visually-hidden" for="fileSearchInput">Search all files and folders</label>
@@ -457,8 +450,11 @@
       <div class="file-drawer-backdrop" id="fileDrawerBackdrop"></div>
       <aside class="file-drawer is-open" id="fileDrawer" aria-label="File navigation">
         <div class="drawer-heading">
-          <div class="drawer-heading-title"><i data-feather="folder" aria-hidden="true"></i><span>Files</span></div>
-          <button class="toolbar-icon-button drawer-close" id="fileDrawerClose" type="button" aria-label="Close file navigation" title="Close file navigation"><i data-feather="x" aria-hidden="true"></i></button>
+          <a class="drawer-brand" href="#" onclick="event.preventDefault();goToRoot()" aria-label="Ada home">Ada</a>
+          <div class="drawer-heading-actions">
+            <button class="toolbar-icon-button" id="refreshFilesButton" type="button" onclick="refreshFiles()" aria-label="Refresh files" title="Refresh files"><i data-feather="refresh-cw" aria-hidden="true"></i></button>
+            <button class="toolbar-icon-button drawer-close" id="fileDrawerClose" type="button" aria-label="Close file navigation" title="Close file navigation"><i data-feather="x" aria-hidden="true"></i></button>
+          </div>
         </div>
         <div class="path-nav" id="pathNav" data-ada-component="path-navigation">
           <button class="path-segment path-crumb-button" type="button" onclick="goToRoot()" aria-label="Go to Ada root" title="Ada root"><i data-feather="home" aria-hidden="true"></i><span class="visually-hidden">Ada root</span></button>
@@ -467,10 +463,21 @@
       </aside>
       <main class="workspace" id="workspace" aria-label="Document workspace">
         <section class="workspace-empty" id="workspaceEmptyState">
-          <div class="workspace-empty-icon"><i data-feather="file-text" aria-hidden="true"></i></div>
-          <h2>Your workspace</h2>
-          <p>Choose a file to open it here. Your documents stay in Ada’s familiar preview windows.</p>
-          <button class="workspace-browse-button" id="openFilesFromWorkspace" type="button"><i data-feather="folder" aria-hidden="true"></i><span>Browse files</span></button>
+          <div class="workspace-intro">
+            <div class="workspace-empty-icon"><i data-feather="file-text" aria-hidden="true"></i></div>
+            <h2>Your workspace</h2>
+            <p>Choose a file to open it here. Your documents stay in Ada’s familiar preview windows.</p>
+            <button class="workspace-browse-button" id="openFilesFromWorkspace" type="button"><i data-feather="folder" aria-hidden="true"></i><span>Browse files</span></button>
+          </div>
+          <section class="workspace-recents" aria-labelledby="workspaceRecentHeading">
+            <div class="workspace-recents-heading">
+              <h3 id="workspaceRecentHeading"><i data-feather="clock" aria-hidden="true"></i><span>Recently opened</span></h3>
+              <button class="recent-clear-all" id="workspaceClearRecents" type="button" onclick="clearRecentFiles()" disabled><i data-feather="trash-2" aria-hidden="true"></i><span>Clear all</span></button>
+            </div>
+            <div class="workspace-recent-list" id="workspaceRecentFiles" aria-live="polite">
+              <p class="workspace-recent-empty">No recent files yet.</p>
+            </div>
+          </section>
         </section>
       </main>
     </div>
@@ -482,7 +489,6 @@
   </div>
 
   <div class="preview-container" id="previewContainer" data-ada-component="preview-area"></div>
-  <div id="taskbar" data-ada-component="taskbar" style="display: none;"></div>
 
   <div class="mobile-preview" id="mobilePreview" data-ada-component="mobile-preview">
     <div class="content">
@@ -593,16 +599,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="bin/pdf-viewer.js?v=19"></script>
 <script src="bin/file-search.js?v=13"></script>
-<script src="bin/app.js?v=23"></script>
+<script src="bin/app.js?v=25"></script>
 <script src="bin/markdown.js?v=19"></script>
 <div id="updateNotice" style="display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--item); color: var(--fg); padding: 12px 20px; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.2); z-index: 9999; align-items: center; gap: 12px;">
   <span>Update detected. Refresh now to apply changes.</span>
   <button onclick="location.reload()" style="background:var(--accent);color:white;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">Refresh</button>
   <button onclick="dismissUpdateNotice()">×</button>
 	</div>
-<div id="taskbarContextMenu" class="context-menu" style="display: none;"></div>
 <script src="bin/admin-terminal.js"></script>
 <script src="bin/auth.js?v=19"></script>
 <script src="bin/upload.js?v=19"></script>
-<script src="bin/mobile.js?v=21"></script>
+<script src="bin/mobile.js?v=23"></script>
 </body>
