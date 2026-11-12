@@ -47,11 +47,11 @@ The branch's existing unit checks cover search and theme compatibility plus the 
 
 ## Browser and deployment findings
 
-The provided deployment, `https://ada-newux.vercel.app`, initially lagged behind: the first audit saw v13 assets while local source was at v19. After the Office viewer commit, Vercel serves v22 CSS/app assets and a v22 service-worker cache; the mobile script remains v21. `/api/config` reports `Pratyush-Chanda/Ada` and `GITHUB_BRANCH=newux`; the live root, Office manifest, task-pane, and 32px/64px icons all return HTTP 200, and the file tree includes `office-addin/`.
+The provided deployment, `https://ada-newux.vercel.app`, initially lagged behind: the first audit saw v13 assets while local source was at v19. The live Vercel build now serves the v23 app script and service-worker cache, v22 CSS, and v21 mobile script. `/api/config` reports `Pratyush-Chanda/Ada` and `GITHUB_BRANCH=newux`; the live root, Office manifest, task-pane, and 32px/64px icons all return HTTP 200, and the file tree includes `office-addin/`.
 
 The initial deployment check also saw an HTTP 503 on a README preview and a `GITHUB_PAT is not configured` response. The latest `/api/raw?path=README.md` request returns HTTP 200 with README content. This confirms that the tested public read path is currently healthy, but it does not establish that protected routes or mutating GitHub actions are configured. The live task pane loads Office.js in a browser and shows the expected no-host state; Microsoft's production manifest validator accepts the manifest and its live assets. Actual sideloading and behavior inside Word, Excel, or PowerPoint remain untested until an Office host is available.
 
-The live v22 browser check opened a public DOCX through Microsoft's embed and confirmed the Ada-reader fallback is visible. Clicking that fallback exposed two existing DOCX integration defects: Ada expected `window.docxPreview` instead of the library's `window.docx.renderAsync` API, and JSZip loaded after docx-preview had initialized. The v23 source now uses the actual API and loads JSZip first; Vercel deployment and the repeat fallback test are pending.
+The live v22 browser check opened a public DOCX through Microsoft's embed and confirmed the Ada-reader fallback is visible. Clicking that fallback exposed two existing DOCX integration defects: Ada expected `window.docxPreview` instead of the library's `window.docx.renderAsync` API, and JSZip loaded after docx-preview had initialized. Both were fixed in v23. The deployed v23 browser test confirmed that Ada builds the public raw GitHub source URL, creates the Microsoft iframe, and shows the fallback for DOCX and XLSX. Clicking **Use Ada reader** removed the iframe and successfully rendered the DOCX sample text through docx-preview and the XLSX sample as a SheetJS table. The iframe's `load` event only confirms the viewer page loaded; actual Office rendering could not be verified cross-origin, and a prior direct probe showed a blank viewer shell.
 
 ## Regression baseline for subsequent work
 
@@ -64,9 +64,9 @@ Before and after changing the shell or window manager, verify these user-facing 
 5. **Responsive behavior:** toolbar and drawer at 390px and 320px widths; mobile window sizing, scrollability, and no clipped controls.
 6. **Themes and account UI:** light/dark and custom-theme selection remain intact; theme CSS does not make the redesigned default unusable; account/admin visibility continues to respect current permissions.
 7. **File actions and safety:** confirm download behavior. Exercise upload/delete/remote mutations only with a safe test repository or controlled fixtures.
-8. **Assets and caching:** deployed HTML, CSS, scripts, and service worker all refer to the same build/version; hard reload and a fresh session show the same shell.
+8. **Assets and caching:** deployed HTML and the service-worker cache use the expected cache-busted URL for each asset; hard reload and a fresh session show the same shell.
 
-The last confirmed live build is v22, which serves the Office Web Viewer route and Ada fallback button. The v23 source fixes the DOCX fallback API name and CDN dependency order; its Vercel deployment and repeat DOCX fallback check are pending. Remaining end-to-end checks include sideloading inside a real Office host, exercising host-specific filename behavior, and testing protected or mutating GitHub actions only with a safe fixture.
+The last confirmed live build is v23. The public Office Web Viewer route is best-effort; Ada's DOCX fallback has been verified against the sample file. Remaining end-to-end checks include confirming actual document rendering in Microsoft's cross-origin viewer, sideloading inside a real Office host, exercising host-specific filename behavior, and testing protected or mutating GitHub actions only with a safe fixture.
 
 ## References
 
