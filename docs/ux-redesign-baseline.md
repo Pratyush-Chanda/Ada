@@ -49,7 +49,7 @@ The branch's existing unit checks cover search and theme compatibility plus the 
 
 ## Browser and deployment findings
 
-The provided deployment, `https://ada-newux.vercel.app`, initially lagged behind: the first audit saw v13 assets while local source was at v19. Before the v25 UX update is pushed, the last confirmed live Vercel build serves app v23, CSS v22, mobile v21, and service-worker cache v23. `/api/config` reports `Pratyush-Chanda/Ada` and `GITHUB_BRANCH=newux`; the live root, Office manifest, task-pane, and 32px/64px icons all return HTTP 200, and the file tree includes `office-addin/`.
+The provided deployment, `https://ada-newux.vercel.app`, initially lagged behind: the first audit saw v13 assets while local source was at v19. Vercel now serves the pushed v25 app, v24 CSS, v23 mobile script, and `webman-v25` service-worker cache. `/api/config` reports `Pratyush-Chanda/Ada` and `GITHUB_BRANCH=newux`; the live root, Office manifest, task-pane, and 32px/64px icons all return HTTP 200, and the file tree includes `office-addin/`. The live browser confirmed the centered desktop search, drawer branding/Feather refresh icon, v25 cache, and taskbar-free Recent/minimize/restore/Clear all flow; 390px and 320px responsive checks were completed against the same local source commit.
 
 The initial deployment check also saw an HTTP 503 on a README preview and a `GITHUB_PAT is not configured` response. The latest `/api/raw?path=README.md` request returns HTTP 200 with README content. This confirms that the tested public read path is currently healthy, but it does not establish that protected routes or mutating GitHub actions are configured. The live task pane loads Office.js in a browser and shows the expected no-host state; Microsoft's production manifest validator accepts the manifest and its live assets. Actual sideloading and behavior inside Word, Excel, or PowerPoint remain untested until an Office host is available.
 
@@ -68,7 +68,7 @@ Before and after changing the shell or window manager, verify these user-facing 
 7. **File actions and safety:** confirm download behavior. Exercise upload/delete/remote mutations only with a safe test repository or controlled fixtures.
 8. **Assets and caching:** deployed HTML and the service-worker cache use the expected cache-busted URL for each asset; hard reload and a fresh session show the same shell.
 
-The last confirmed live build before the v25 push is v23. The public Office Web Viewer route is best-effort; Ada's DOCX fallback has been verified against the sample file. Remaining end-to-end checks include confirming actual document rendering in Microsoft's cross-origin viewer, sideloading inside a real Office host, exercising host-specific filename behavior, and testing protected or mutating GitHub actions only with a safe fixture.
+The latest confirmed live build is v25. The public Office Web Viewer route is best-effort; Ada's DOCX fallback has been verified against the sample file. Remaining end-to-end checks include confirming actual document rendering in Microsoft's cross-origin viewer, sideloading inside a real Office host, exercising host-specific filename behavior, and testing protected or mutating GitHub actions only with a safe fixture.
 
 ## References
 
