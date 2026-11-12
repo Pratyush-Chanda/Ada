@@ -17,7 +17,7 @@
           "type": "file",
           "name": "office-web-viewer.md",
           "path": "docs/office-web-viewer.md",
-          "sha": "dc5eb29b41606d0981dfa683ef4f70fd5887f8e9",
+          "sha": "42803d33e0be483fc8da421da2b196796f63ba8a",
           "mime": "text/markdown"
         },
         {
@@ -31,7 +31,7 @@
           "type": "file",
           "name": "ux-redesign-baseline.md",
           "path": "docs/ux-redesign-baseline.md",
-          "sha": "74581a7c08e04038dd77674d0cbf55de75d417e6",
+          "sha": "ae11af45c37c05c134199f3be8243dbac60ffabf",
           "mime": "text/markdown"
         }
       ]
