@@ -42,9 +42,9 @@ Ada reads a `files.json` manifest from your GitHub repo and builds an interactiv
 
 ### Document Preview
 
-Click any file to open a floating preview window. Multiple files can be open at once on desktop, each in its own draggable, resizable window with a minimise button that docks it to a taskbar at the bottom.
+Click any file to open a floating preview window. Multiple files can be open at once on desktop, each in its own draggable, resizable window. Minimized windows remain available as tiles in the workspace.
 
-![Floating document preview windows with taskbar](placeholder-preview-windows.png)
+![Floating document preview windows](placeholder-preview-windows.png)
 
 Supported formats:
 
