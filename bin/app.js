@@ -14,6 +14,7 @@ const fileDrawer = document.getElementById("fileDrawer");
 const fileDrawerToggle = document.getElementById("fileDrawerToggle");
 const fileDrawerBackdrop = document.getElementById("fileDrawerBackdrop");
 const workspaceEmptyState = document.getElementById("workspaceEmptyState");
+const workspaceIntro = document.getElementById("workspaceIntro");
 if (fileSearchShortcut && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) {
   fileSearchShortcut.textContent = "⌘ K";
 }
@@ -22,7 +23,6 @@ let currentNode = null;
 let rootNode = null;
 let fileSearchIndex = [];
 let pathHistory = [];
-let recentFilesOpen = false;
 const RECENT_FILES_STORAGE_KEY = "ada-recent-files-v1";
 const MAX_RECENT_FILES = 8;
 let selected = null;
@@ -152,7 +152,11 @@ if (window.matchMedia("(max-width: 768px)").matches) setFileDrawerOpen(false);
 function syncWorkspaceEmptyState() {
   const hasVisibleWindow = Object.values(windows).some((win) => win?.isConnected && win.style.display !== "none");
   if (workspaceEmptyState) workspaceEmptyState.hidden = hasVisibleWindow;
-  renderWorkspaceRecentFiles();
+  const hasRecentFiles = renderWorkspaceRecentFiles();
+  const hasMinimizedWindows = renderWorkspaceMinimizedWindows();
+  const hasWorkspaceItems = hasRecentFiles || hasMinimizedWindows;
+  workspaceEmptyState?.classList.toggle("has-workspace-items", hasWorkspaceItems);
+  if (workspaceIntro) workspaceIntro.hidden = hasWorkspaceItems;
 }
 
 // Runtime config loaded from /api/config (populated from Vercel env vars).
@@ -283,7 +287,7 @@ async function fetchTree() {
     pathHistory = [];
     renderFolder(tree);
     updatePathNav();
-    renderWorkspaceRecentFiles();
+    syncWorkspaceEmptyState();
 
     const fontPromise = new Promise((resolve) => {
   const testSpan = document.createElement("span");
@@ -376,12 +380,6 @@ function clearFileSearch(restoreFolder = true) {
   if (restoreFolder && currentNode) renderFolder(currentNode);
 }
 
-function setRecentFilesOpen(isOpen) {
-  recentFilesOpen = isOpen;
-  const toggle = document.getElementById("recentFilesToggle");
-  if (toggle) toggle.setAttribute("aria-expanded", String(isOpen));
-}
-
 function readRecentFiles() {
   try {
     const stored = JSON.parse(localStorage.getItem(RECENT_FILES_STORAGE_KEY) || "[]");
@@ -401,10 +399,9 @@ function recordRecentFile(path, name) {
   try {
     localStorage.setItem(RECENT_FILES_STORAGE_KEY, JSON.stringify(recent.slice(0, MAX_RECENT_FILES)));
   } catch (_) {
-    // Recent navigation is optional; private browsing or storage limits should not block previews.
+    // Recent-file history is optional; storage limits should not block previews.
   }
-  renderWorkspaceRecentFiles();
-  if (recentFilesOpen) renderRecentFiles();
+  syncWorkspaceEmptyState();
 }
 
 function getRecentFileEntries() {
@@ -425,15 +422,14 @@ function getRecentFileEntries() {
 
 function clearRecentFiles() {
   try { localStorage.removeItem(RECENT_FILES_STORAGE_KEY); } catch (_) {}
-  renderWorkspaceRecentFiles();
-  if (recentFilesOpen) renderRecentFiles();
+  syncWorkspaceEmptyState();
 }
 
 function openRecentFile(path) {
   const entry = fileSearchIndex.find((item) => item.node.type === "file" && item.node.path === path);
   if (!entry) {
     showStatus("This recent file is no longer available.");
-    renderWorkspaceRecentFiles();
+    syncWorkspaceEmptyState();
     return;
   }
   recordRecentFile(entry.node.path, entry.node.name);
@@ -442,25 +438,19 @@ function openRecentFile(path) {
 
 function renderWorkspaceRecentFiles() {
   const list = document.getElementById("workspaceRecentFiles");
+  const section = document.getElementById("workspaceRecentsSection");
   const clearButton = document.getElementById("workspaceClearRecents");
-  if (!list) return;
+  if (!list || !section) return false;
 
   const entries = getRecentFileEntries();
   if (clearButton) clearButton.disabled = entries.length === 0;
+  section.hidden = entries.length === 0;
   list.replaceChildren();
-
-  if (!entries.length) {
-    const empty = document.createElement("p");
-    empty.className = "workspace-recent-empty";
-    empty.textContent = "No recent files yet.";
-    list.appendChild(empty);
-    return;
-  }
 
   for (const { recent, result } of entries) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "workspace-recent-item";
+    button.className = "workspace-tile workspace-recent-item";
     button.setAttribute("aria-label", `Open recently viewed file ${result.node.name || recent.name}, ${result.path}`);
 
     const icon = document.createElement("span");
@@ -486,77 +476,52 @@ function renderWorkspaceRecentFiles() {
     button.addEventListener("click", () => openRecentFile(result.path));
     list.appendChild(button);
   }
+  return entries.length > 0;
 }
 
-function toggleRecentFiles() {
-  if (recentFilesOpen) {
-    setRecentFilesOpen(false);
-    if (currentNode) renderFolder(currentNode);
-    return;
-  }
-  clearFileSearch(false);
-  setRecentFilesOpen(true);
-  setFileDrawerOpen(true);
-  renderRecentFiles();
-}
+function renderWorkspaceMinimizedWindows() {
+  const list = document.getElementById("workspaceMinimizedWindows");
+  const section = document.getElementById("workspaceMinimizedSection");
+  if (!list || !section) return false;
 
-function renderRecentFiles() {
-  const entries = getRecentFileEntries();
-  listView.replaceChildren();
-  selected = null;
-  const heading = document.createElement("div");
-  heading.className = "recent-list-heading";
-  const summary = document.createElement("div");
-  summary.className = "search-results-meta";
-  summary.setAttribute("role", "status");
-  summary.textContent = entries.length
-    ? `Recently opened · ${entries.length} ${entries.length === 1 ? "file" : "files"}`
-    : "Recently opened · no files yet";
-  const clearButton = document.createElement("button");
-  clearButton.type = "button";
-  clearButton.className = "recent-clear-all";
-  clearButton.disabled = entries.length === 0;
-  clearButton.innerHTML = `${featherSvg("trash-2")}<span>Clear all</span>`;
-  clearButton.addEventListener("click", clearRecentFiles);
-  heading.append(summary, clearButton);
-  listView.appendChild(heading);
+  const entries = Object.entries(windows).filter(([, win]) =>
+    win?.isConnected && win.style.display === "none"
+  );
+  section.hidden = entries.length === 0;
+  list.replaceChildren();
 
-  if (!entries.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty-state search-empty-state";
-    empty.innerHTML = `<div class="icon" aria-hidden="true">${featherSvg("clock")}</div><h3>No recent files</h3><p>Files you preview will appear here for quick access on this device.</p>`;
-    listView.appendChild(empty);
-    return;
-  }
-
-  for (const { recent, result } of entries) {
+  for (const [id, win] of entries) {
+    const name = win.querySelector(".title")?.textContent?.trim() || "Preview";
+    const path = win.dataset.filePath || "";
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "search-result";
-    button.setAttribute("aria-label", `Open recently viewed file ${result.node.name}, ${result.path}`);
+    button.className = "workspace-tile workspace-minimized-item";
+    button.setAttribute("aria-label", `Restore minimized window ${name}${path ? `, ${path}` : ""}`);
 
     const icon = document.createElement("span");
-    icon.className = "search-result-icon";
+    icon.className = "workspace-recent-icon";
     icon.setAttribute("aria-hidden", "true");
-    icon.innerHTML = getFileIcon(result.node);
+    icon.innerHTML = getFileIcon({ type: "file", name });
 
     const copy = document.createElement("span");
-    copy.className = "search-result-copy";
-    const name = document.createElement("span");
-    name.className = "search-result-name";
-    name.textContent = result.node.name || recent.name;
-    const path = document.createElement("span");
-    path.className = "search-result-path";
-    path.textContent = result.path;
-    copy.append(name, path);
+    copy.className = "workspace-recent-copy";
+    const fileName = document.createElement("span");
+    fileName.className = "workspace-recent-name";
+    fileName.textContent = name;
+    const filePath = document.createElement("span");
+    filePath.className = "workspace-recent-path";
+    filePath.textContent = path;
+    copy.append(fileName, filePath);
 
-    const kind = document.createElement("span");
-    kind.className = "search-result-kind";
-    kind.textContent = "Recent";
-    button.append(icon, copy, kind);
-    button.addEventListener("click", () => openSearchResult(result));
-    listView.appendChild(button);
+    const restoreIcon = document.createElement("span");
+    restoreIcon.className = "workspace-recent-open";
+    restoreIcon.setAttribute("aria-hidden", "true");
+    restoreIcon.innerHTML = featherSvg("maximize-2");
+    button.append(icon, copy, restoreIcon);
+    button.addEventListener("click", () => restoreExistingPreview(win.dataset.filePath || id));
+    list.appendChild(button);
   }
+  return entries.length > 0;
 }
 
 function renderSearchResults() {
@@ -637,7 +602,6 @@ function focusFileSearch() {
 }
 
 fileSearchInput?.addEventListener("input", () => {
-  setRecentFilesOpen(false);
   updateSearchClearButton();
   if (fileSearchInput.value.trim()) setFileDrawerOpen(true);
   if (fileSearchInput.value.trim()) renderSearchResults();
@@ -694,10 +658,6 @@ document.addEventListener("keydown", (event) => {
     focusFileSearch();
   } else if (event.key === "Escape" && fileSearchInput?.value && target !== fileSearchInput) {
     clearFileSearch();
-  } else if (event.key === "Escape" && recentFilesOpen) {
-    setRecentFilesOpen(false);
-    if (currentNode) renderFolder(currentNode);
-    event.preventDefault();
   } else if (event.key === "/" && !isEditable && !event.ctrlKey && !event.metaKey && !event.altKey) {
     event.preventDefault();
     focusFileSearch();
@@ -707,7 +667,6 @@ document.addEventListener("keydown", (event) => {
 
 function renderFolder(node) {
   if (!node) return;
-  setRecentFilesOpen(false);
   if (fileSearchInput?.value.trim()) {
     renderSearchResults();
     return;

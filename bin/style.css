@@ -2438,6 +2438,9 @@ body {
   margin: auto;
   text-align: center;
 }
+.workspace-empty.has-workspace-items { text-align: left; }
+.workspace-intro[hidden],
+.workspace-panel[hidden] { display: none; }
 .workspace-empty-icon {
   display: grid;
   width: 52px;
@@ -2467,14 +2470,13 @@ html[data-theme-mode="dark"] .workspace-empty p { color: #bdc1c6; }
 }
 .workspace-browse-button:hover { background: #1765cc; }
 html[data-theme-mode="dark"] .workspace-browse-button { color: #1f1f1f; background: #a8c7fa; }
-.workspace-recents { width: min(640px, 100%); margin: 32px auto 0; text-align: left; }
-.workspace-recents-heading,
-.recent-list-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.workspace-recents-heading { margin-bottom: 10px; }
-.workspace-recents-heading h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 600; }
-.workspace-recents-heading h3 svg { width: 17px; height: 17px; color: var(--accent); }
-.recent-list-heading { padding: 4px 6px 12px; }
-.recent-list-heading .search-results-meta { margin: 0; padding: 0; }
+.workspace-panel { width: 100%; margin: 0 auto; text-align: left; }
+.workspace-panel + .workspace-panel { margin-top: 32px; }
+#workspaceRecentsSection[hidden] + #workspaceMinimizedSection { margin-top: 0; }
+.workspace-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.workspace-panel-heading { margin-bottom: 12px; }
+.workspace-panel-heading h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 600; }
+.workspace-panel-heading h3 svg { width: 17px; height: 17px; color: var(--accent); }
 .recent-clear-all {
   display: inline-flex;
   align-items: center;
@@ -2492,26 +2494,36 @@ html[data-theme-mode="dark"] .workspace-browse-button { color: #1f1f1f; backgrou
 .recent-clear-all:hover:not(:disabled) { background: var(--hover); }
 .recent-clear-all:disabled { opacity: .45; cursor: not-allowed; }
 .recent-clear-all svg { width: 14px; height: 14px; }
-.workspace-recent-list { display: grid; gap: 8px; max-height: 340px; overflow: auto; }
-.workspace-recent-item {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-width: 0;
+.workspace-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 12px;
-  padding: 10px 12px;
+}
+.workspace-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 190px;
+  min-width: 0;
+  aspect-ratio: 1;
+  gap: 12px;
+  padding: 16px;
   color: var(--fg);
   border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--item);
   text-align: left;
   cursor: pointer;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  transition: background-color 120ms ease, border-color 120ms ease, transform 120ms ease;
 }
-.workspace-recent-item:hover { background: var(--hover); border-color: var(--border); }
+.workspace-tile:hover { background: var(--hover); border-color: var(--border); transform: translateY(-2px); }
+.workspace-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .workspace-recent-icon { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; color: var(--accent); }
 .workspace-recent-icon svg { width: 18px; height: 18px; }
-.workspace-recent-copy { display: grid; flex: 1 1 auto; min-width: 0; gap: 3px; }
+.workspace-recent-copy { display: grid; width: 100%; min-width: 0; gap: 5px; }
 .workspace-recent-name,
 .workspace-recent-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .workspace-recent-name { font-size: 13px; font-weight: 500; }
@@ -2519,8 +2531,7 @@ html[data-theme-mode="dark"] .workspace-browse-button { color: #1f1f1f; backgrou
 html[data-theme-mode="dark"] .workspace-recent-path { color: #bdc1c6; }
 .workspace-recent-open { display: grid; flex: 0 0 auto; place-items: center; color: #5f6368; }
 .workspace-recent-open svg { width: 16px; height: 16px; }
-.workspace-recent-empty { margin: 0; padding: 12px; color: #5f6368; font-size: 13px; text-align: left; }
-html[data-theme-mode="dark"] .workspace-recent-empty { color: #bdc1c6; }
+.workspace-tile > .workspace-recent-open { position: absolute; top: 16px; right: 16px; }
 
 .file-item {
   min-height: 44px;

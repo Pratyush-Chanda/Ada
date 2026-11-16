@@ -7,6 +7,7 @@
 //   https://view.officeapps.live.com/op/embed.aspx?src=https://your-app.vercel.app/api/raw?path=...
 
 const REPO = process.env.GITHUB_REPO;
+const BRANCH = (process.env.GITHUB_BRANCH || 'main').trim();
 
 const MIME_TYPES = {
   doc:  'application/msword',
@@ -81,7 +82,7 @@ export default async function handler(req, res) {
   // Fetch file metadata from GitHub Contents API to get download_url
   const encodedPath = repoPath.split('/').map(encodeURIComponent).join('/');
   const metaRes = await fetch(
-    `https://api.github.com/repos/${REPO}/contents/${encodedPath}`,
+    `https://api.github.com/repos/${REPO}/contents/${encodedPath}?ref=${encodeURIComponent(BRANCH)}`,
     { headers: { Authorization: authHeader(pat), Accept: 'application/vnd.github.v3+json' } }
   );
 

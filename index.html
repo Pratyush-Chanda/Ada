@@ -84,7 +84,7 @@
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="mouse-pointer" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Click to open files</strong><span>Single-click any file to preview it in a floating window</span></div></div>
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="more-horizontal" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Right-click for options</strong><span>Right-click any file for Preview or Download options</span></div></div>
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="move" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Drag windows freely</strong><span>Hold and drag the title bar to reposition any window</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon"><i data-feather="minus" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Keep windows minimized</strong><span>Minimized windows stay available; reopen them from Recently opened in the workspace</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="minus" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Keep windows minimized</strong><span>Reopen minimized windows from their tiles in the workspace</span></div></div>
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="search" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Find files quickly</strong><span>Search file and folder names across Ada; press Ctrl+K or ⌘K to jump to search</span></div></div>
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="folder" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Navigate folders</strong><span>Click a folder to open it, use the parent-folder action or breadcrumb to move around</span></div></div>
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="upload-cloud" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Upload files</strong><span>Choose More → Upload file to submit a file for admin review</span></div></div>
@@ -92,7 +92,7 @@
       </div>
       <div id="guideMobile" style="display:none">
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="smartphone" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Tap to open files</strong><span>Tap any file to open a full-screen preview</span></div></div>
-        <div class="guide-step"><div class="guide-step-icon"><i data-feather="minus" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Keep windows minimized</strong><span>Minimized previews stay available; reopen one from Recently opened in the workspace</span></div></div>
+        <div class="guide-step"><div class="guide-step-icon"><i data-feather="minus" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Keep windows minimized</strong><span>Reopen minimized previews from their tiles in the workspace</span></div></div>
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="search" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Find files quickly</strong><span>Search file and folder names across Ada</span></div></div>
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="folder" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Navigate folders</strong><span>Tap a folder to open, use the parent-folder action or breadcrumb to move around</span></div></div>
         <div class="guide-step"><div class="guide-step-icon"><i data-feather="upload-cloud" aria-hidden="true"></i></div><div class="guide-step-text"><strong>Upload files</strong><span>Choose More → Upload file to submit a file for review</span></div></div>
@@ -413,16 +413,12 @@
         <button id="clearFileSearch" type="button" aria-label="Clear search" title="Clear search" hidden>×</button>
       </div>
       <div class="toolbar-actions" aria-label="Application actions">
-        <button class="toolbar-action desktop-only" id="recentFilesToggle" type="button" onclick="toggleRecentFiles()" title="Recently opened files" aria-label="Recently opened files" aria-controls="listView" aria-expanded="false"><i data-feather="clock" aria-hidden="true"></i><span class="toolbar-action-label">Recent</span></button>
         <button class="toolbar-action toolbar-account" id="loginBtnToolbar" type="button" onclick="showLoginScreen()" title="Login / Account" aria-label="Login or account"><i data-feather="user" aria-hidden="true"></i><span class="toolbar-action-label">Login</span></button>
         <button class="toolbar-icon-button" id="mobOverflowBtn" type="button" onclick="toggleMobOverflow()" title="More actions" aria-label="More actions" aria-expanded="false"><i data-feather="more-horizontal" aria-hidden="true"></i></button>
       </div>
     </header>
     <!-- Compact action menu -->
     <div id="mobOverflowMenu">
-      <button class="mob-overflow-item" onclick="toggleRecentFiles();closeMobOverflow()">
-        <i class="moi-icon" data-feather="clock" aria-hidden="true"></i> Recently opened
-      </button>
       <button class="mob-overflow-item" onclick="refreshFiles();closeMobOverflow()">
         <i class="moi-icon" data-feather="refresh-cw" aria-hidden="true"></i> Refresh
       </button>
@@ -463,20 +459,24 @@
       </aside>
       <main class="workspace" id="workspace" aria-label="Document workspace">
         <section class="workspace-empty" id="workspaceEmptyState">
-          <div class="workspace-intro">
+          <div class="workspace-intro" id="workspaceIntro">
             <div class="workspace-empty-icon"><i data-feather="file-text" aria-hidden="true"></i></div>
             <h2>Your workspace</h2>
             <p>Choose a file to open it here. Your documents stay in Ada’s familiar preview windows.</p>
             <button class="workspace-browse-button" id="openFilesFromWorkspace" type="button"><i data-feather="folder" aria-hidden="true"></i><span>Browse files</span></button>
           </div>
-          <section class="workspace-recents" aria-labelledby="workspaceRecentHeading">
-            <div class="workspace-recents-heading">
-              <h3 id="workspaceRecentHeading"><i data-feather="clock" aria-hidden="true"></i><span>Recently opened</span></h3>
+          <section class="workspace-panel" id="workspaceRecentsSection" aria-labelledby="workspaceRecentHeading" hidden>
+            <div class="workspace-panel-heading">
+              <h3 id="workspaceRecentHeading"><i data-feather="clock" aria-hidden="true"></i><span>Recently opened files</span></h3>
               <button class="recent-clear-all" id="workspaceClearRecents" type="button" onclick="clearRecentFiles()" disabled><i data-feather="trash-2" aria-hidden="true"></i><span>Clear all</span></button>
             </div>
-            <div class="workspace-recent-list" id="workspaceRecentFiles" aria-live="polite">
-              <p class="workspace-recent-empty">No recent files yet.</p>
+            <div class="workspace-tile-grid" id="workspaceRecentFiles" aria-live="polite"></div>
+          </section>
+          <section class="workspace-panel" id="workspaceMinimizedSection" aria-labelledby="workspaceMinimizedHeading" hidden>
+            <div class="workspace-panel-heading">
+              <h3 id="workspaceMinimizedHeading"><i data-feather="minus-square" aria-hidden="true"></i><span>Minimised windows</span></h3>
             </div>
+            <div class="workspace-tile-grid" id="workspaceMinimizedWindows" aria-live="polite"></div>
           </section>
         </section>
       </main>
