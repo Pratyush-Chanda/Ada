@@ -54,24 +54,6 @@
     },
     {
       "type": "folder",
-      "name": "office-addin",
-      "children": [
-        {
-          "type": "folder",
-          "name": "icons",
-          "children": []
-        },
-        {
-          "type": "file",
-          "name": "README.md",
-          "path": "office-addin/README.md",
-          "sha": "02c6126e0d7675287a11d24a209ba10ab02214c7",
-          "mime": "text/markdown"
-        }
-      ]
-    },
-    {
-      "type": "folder",
       "name": "pages",
       "children": [
         {

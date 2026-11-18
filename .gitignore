@@ -8,9 +8,9 @@ __pycache__/
 *.py[cod]
 node_modules/
 /.next/
+/public/index.html
 /public/bin/
 /public/community/
-/public/office-addin/
 /public/favicon.png
 /public/files.json
 /public/manifest.json

@@ -609,13 +609,7 @@
 
     document.querySelectorAll("[data-ada-theme-mode]").forEach((button) => {
       button.addEventListener("click", () => setMode(button.dataset.adaThemeMode));
-    }
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initializeThemeRuntime, { once: true });
-    } else {
-      initializeThemeRuntime();
-    }
+    });
     document.getElementById("adaThemeFileInput")?.addEventListener("change", async (event) => {
       const file = event.target.files && event.target.files[0];
       try { await importThemeFile(file); }
@@ -656,8 +650,15 @@
       if (media.addEventListener) media.addEventListener("change", updateSystemMode);
       else if (media.addListener) media.addListener(updateSystemMode);
     }
-  });
+  }
 
   window.openThemeDashboard = openThemeDashboard;
   window.closeThemeDashboard = closeThemeDashboard;
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeThemeRuntime, { once: true });
+  } else {
+    initializeThemeRuntime();
+  }
+  window.__adaThemeRuntimeReady = true;
 })();

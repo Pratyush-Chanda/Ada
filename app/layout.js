@@ -34,8 +34,7 @@ const mathJaxBootstrap = `window.MathJax = {
 const appScripts = [
   "/bin/modern-auth.js",
   "/bin/gh-proxy.js",
-  "/bin/theme-compat.js",
-  "/bin/theme-runtime.js",
+  "/bin/theme-loader.js",
   "https://cdn.jsdelivr.net/npm/feather-icons@4.29.2/dist/feather.min.js",
   "/bin/file-search.js?v=13",
   "/bin/app.js?v=25",

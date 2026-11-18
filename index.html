@@ -411,12 +411,9 @@
       <button class="mob-overflow-item" onclick="openCommunity();closeMobOverflow()">
         <i class="moi-icon" data-feather="message-circle" aria-hidden="true"></i> Community
       </button>
-      <button class="mob-overflow-item" onclick="openThemeDashboard();closeMobOverflow()">
+      <button class="mob-overflow-item" data-ada-theme-launcher onclick="openThemeDashboard();closeMobOverflow()">
         <i class="moi-icon" data-feather="sliders" aria-hidden="true"></i> Themes
       </button>
-      <a class="mob-overflow-item" href="office-addin/manifest.xml" download="Ada-for-Office.xml" onclick="closeMobOverflow()" aria-label="Download the Ada for Office add-in manifest">
-        <i class="moi-icon" data-feather="external-link" aria-hidden="true"></i> Install Ada for Office
-      </a>
       <button class="mob-overflow-item" id="adminPanelBtn" style="display:none" onclick="showAdminPanel();closeMobOverflow()">
         <i class="moi-icon" data-feather="settings" aria-hidden="true"></i> Admin Panel
       </button>
@@ -538,7 +535,15 @@
           <button id="adaThemeEditorCancel" class="ada-theme-action ada-theme-action--secondary" type="button">Cancel</button>
         </div>
       </section>
-      <p id="adaThemeStatus" class="ada-theme-status" role="status" aria-live="polite">Loading theme settings…</p>
+      <p id="adaThemeStatus" class="ada-theme-status" role="status" aria-live="polite">Theme tools load when opened.</p>
+      <div id="adaThemeLoadWarning" class="ada-theme-load-warning" role="alert" hidden>
+        <p>Theme tools are still loading. You can try loading again, refresh, or continue without Themes for this visit.</p>
+        <div class="ada-theme-actions">
+          <button id="adaThemeRetry" class="ada-theme-action ada-theme-action--primary" type="button">Retry loading</button>
+          <button id="adaThemeRefresh" class="ada-theme-action ada-theme-action--secondary" type="button">Refresh page</button>
+          <button id="adaThemeSkip" class="ada-theme-action ada-theme-action--secondary" type="button">Continue without Themes</button>
+        </div>
+      </div>
       <p class="ada-theme-keyboard-note">Emergency safe mode: press Ctrl + Alt + Shift + S to disable imported CSS and reload.</p>
     </section>
   </div>
@@ -568,8 +573,7 @@
   </div>
 
 <script src="bin/gh-proxy.js"></script>
-<script src="bin/theme-compat.js"></script>
-<script src="bin/theme-runtime.js"></script>
+<script src="bin/theme-loader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.2/dist/feather.min.js"></script>
 <script>window.feather?.replace({ 'stroke-width': 1.8 });</script>
 <script src="bin/file-search.js?v=13"></script>

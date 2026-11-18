@@ -2235,6 +2235,9 @@ html[data-theme-mode="light"] .markdown-content pre {
 
 .ada-theme-status { min-height: 20px; margin: 12px 0 0; color: var(--success); font-size: 12px; }
 .ada-theme-status.is-error { color: var(--danger); }
+.ada-theme-load-warning { margin-top: 12px; padding: 14px; border: 1px solid var(--warning); border-radius: var(--radius); background: var(--item); }
+.ada-theme-load-warning[hidden] { display: none; }
+.ada-theme-load-warning p { margin: 0; font-size: 13px; line-height: 1.5; }
 #adaThemeDashboard :where(button, input, select, a, textarea):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 @media (max-width: 640px) {

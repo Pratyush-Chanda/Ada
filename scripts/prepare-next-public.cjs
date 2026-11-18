@@ -18,7 +18,7 @@ copyDirectory(binSource, binDestination, (sourcePath) => {
   return !excludedBinPaths.has(relativePath);
 });
 copyDirectory(path.join(root, "community"), path.join(publicDir, "community"));
-copyDirectory(path.join(root, "office-addin"), path.join(publicDir, "office-addin"));
+fs.rmSync(path.join(publicDir, "office-addin"), { recursive: true, force: true });
 
 for (const file of ["index.html", "favicon.png", "files.json", "manifest.json", "offline.html", "installer.html", "service-worker.js"]) {
   fs.copyFileSync(path.join(root, file), path.join(publicDir, file));

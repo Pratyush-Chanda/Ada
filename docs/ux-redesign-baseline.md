@@ -4,6 +4,8 @@
 **Audit date:** 2026-11-10; **updated:** 2026-11-12
 **Scope:** The initial redesign audit and behavior-preservation baseline, with follow-on v20 window-system refinement, Office Add-in, public Office Web Viewer, DOCX fallback corrections, and v25 workspace/header refinement.
 
+Historical note: the Office.js companion add-in described below has since been removed. Ada's standalone Office document previews remain supported.
+
 ## Current implementation against the brief
 
 ### Visual shell, icons, and typography
@@ -22,15 +24,17 @@ The reference implementations in `/tmp/ros-webarcade-ref/initrd/init/modules/win
 
 The v25 shell centers search in the persistent header at desktop, 390px, and 320px widths; the Ada wordmark now lives in the file drawer beside a Feather refresh action. The workspace displays square tiles for recently opened files and minimized windows, with no Recent navigation button, taskbar, or mobile minimized-item stack. Its introductory copy appears only when both sections are empty.
 
+The theme compatibility engine and dashboard runtime load only when Themes is opened. A warning appears after four seconds without initialization or immediately on a load error, with retry, page refresh, and continue-without-Themes actions.
+
 ### PDF and Office files
 
 The branch contains a custom Mozilla PDF.js canvas viewer in `bin/pdf-viewer.js`, intended for direct PDF previews and Markdown PDF embeds so the browser's native PDF viewer is not used. Regression coverage should verify both entry points and confirm there is no native-viewer fallback.
 
-An actual Office-hosted add-in now lives in `office-addin/`. Its XML manifest targets Word, Excel, and PowerPoint, uses the minimum `ReadDocument` permission, and loads a task pane hosted at the `newux` Vercel origin. The task pane loads Microsoft's Office.js CDN and initializes with `Office.onReady()`. It displays the Office host and platform and, when available, a locally derived filename; it does not transmit document contents to Ada. The manifest is downloadable from Ada's **More actions → Install Ada for Office** menu entry. Microsoft's production-level manifest validator accepts the XML and deployed icon URLs. [3] [4] [5] [6] [7]
+At the time of this baseline, an Office-hosted add-in lived in `office-addin/`. Its XML manifest targeted Word, Excel, and PowerPoint and loaded an Office.js task pane; it was separate from Ada's standalone document previews. The companion add-in has since been removed. [3] [4] [5] [6] [7]
 
 Ada's standalone preview now attempts Microsoft's public Office Web Viewer for tracked `.doc`, `.docx`, `.xls`, `.xlsx`, `.ppt`, and `.pptx` files only after an anonymous GitHub API check confirms the configured repository is public. It gives Microsoft a raw GitHub URL, not Ada's PAT-backed `/api/raw` proxy or an authenticated URL. The preview always keeps a visible **Use Ada reader** action; cross-origin restrictions mean Ada cannot reliably detect an internal viewer error from the iframe's `load` event. The Microsoft endpoint is best-effort and is not documented as a supported general-purpose embedding API, so the existing `docx-preview`, SheetJS, and PowerPoint-text fallback remains important. [8] [9] [10]
 
-The Office.js add-in is still a separate feature: Office itself renders the open document inside Word, Excel, or PowerPoint. Office.js does not turn Ada's browser page into a general-purpose Office viewer. [1] [2]
+The former Office.js add-in was a separate feature: Office itself rendered the open document inside Word, Excel, or PowerPoint. Office.js did not turn Ada's browser page into a general-purpose Office viewer. [1] [2]
 
 Implementation and reliability notes for this public-only embed are in `docs/office-web-viewer.md`.
 

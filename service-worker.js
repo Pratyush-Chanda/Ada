@@ -5,7 +5,7 @@
 //   - GitHub API calls → Network-only (never cache)
 //   - Everything else → Network-first, fall back to cache, fall back to offline page
 
-const CACHE_VERSION = 'webman-v27';
+const CACHE_VERSION = 'webman-v28';
 const OFFLINE_PAGE  = 'offline.html';
 
 const APP_SHELL = [
@@ -14,8 +14,7 @@ const APP_SHELL = [
   'manifest.json',
   'favicon.png',
   'bin/style.css?v=24',
-  'bin/theme-compat.js',
-  'bin/theme-runtime.js',
+  'bin/theme-loader.js',
   'bin/vendor-loader.js',
   'bin/themes/ada-default.theme.css',
   'bin/themes/ada-midnight.theme.css',
@@ -92,24 +91,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // 3. Office task pane/assets → network first, cache successful responses, and
-  //    deliberately skip the app-shell COOP/COEP header injection below.
-  if (url.pathname.includes('/office-addin/')) {
-    event.respondWith(
-      fetch(request)
-        .then(response => {
-          if (response.ok && request.method === 'GET') {
-            const clone = response.clone();
-            caches.open(CACHE_VERSION).then(cache => cache.put(request, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match(request))
-    );
-    return;
-  }
-
-  // 4. Top-level navigation → network first, inject COOP/COEP, fallback offline page
+  // 3. Top-level navigation → network first, inject COOP/COEP, fallback offline page
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
