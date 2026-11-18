@@ -3,6 +3,11 @@
   "name": "Ada",
   "children": [
     {
+      "type": "folder",
+      "name": "app",
+      "children": []
+    },
+    {
       "type": "file",
       "name": "CHANGELOG.md",
       "path": "CHANGELOG.md",
@@ -24,7 +29,7 @@
           "type": "file",
           "name": "theme-compatibility.md",
           "path": "docs/theme-compatibility.md",
-          "sha": "b686f2cdc698c08e60d3c18cbdaf35febf271758",
+          "sha": "39e39a3f7f93c2d72275c47b84f2536708d00af6",
           "mime": "text/markdown"
         },
         {
@@ -33,6 +38,17 @@
           "path": "docs/ux-redesign-baseline.md",
           "sha": "faa90882406ea9f93d64ffaad60d0e8079ac8e88",
           "mime": "text/markdown"
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "lib",
+      "children": [
+        {
+          "type": "folder",
+          "name": "api",
+          "children": []
         }
       ]
     },
@@ -55,11 +71,27 @@
       ]
     },
     {
+      "type": "folder",
+      "name": "pages",
+      "children": [
+        {
+          "type": "folder",
+          "name": "api",
+          "children": []
+        }
+      ]
+    },
+    {
       "type": "file",
       "name": "README.md",
       "path": "README.md",
-      "sha": "e2690744ef7955654ddb204872f7982450b5f41a",
+      "sha": "5deb8eb8acbe6b18f4b480264d9a243702399c47",
       "mime": "text/markdown"
+    },
+    {
+      "type": "folder",
+      "name": "scripts",
+      "children": []
     },
     {
       "type": "folder",
