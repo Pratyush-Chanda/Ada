@@ -20,7 +20,7 @@ copyDirectory(binSource, binDestination, (sourcePath) => {
 copyDirectory(path.join(root, "community"), path.join(publicDir, "community"));
 copyDirectory(path.join(root, "office-addin"), path.join(publicDir, "office-addin"));
 
-for (const file of ["favicon.png", "files.json", "manifest.json", "offline.html", "installer.html", "service-worker.js"]) {
+for (const file of ["index.html", "favicon.png", "files.json", "manifest.json", "offline.html", "installer.html", "service-worker.js"]) {
   fs.copyFileSync(path.join(root, file), path.join(publicDir, file));
 }
 
