@@ -151,7 +151,7 @@ A dedicated mobile layout (`bin/mobile.js`) adapts the interface for small scree
 ### Frontend
 
 - Next.js App Router statically renders the main route from the legacy HTML shell. Existing browser scripts are loaded in dependency order to preserve current interactions.
-- `scripts/prepare-next-public.cjs` stages static assets and auxiliary pages under `public/` for Next.js development/builds; generated files are not tracked.
+- `scripts/prepare-next-public.cjs` stages static assets, including the legacy `index.html` fallback, under `public/`; generated files are not tracked.
 - `app/page.js` owns the root route; `app/layout.js` sets metadata, styles, and script loading.
 - `bin/app.js` — core file tree, window management, preview routing
 - `bin/auth.js` — session/token management on the client
@@ -163,7 +163,7 @@ A dedicated mobile layout (`bin/mobile.js`) adapts the interface for small scree
 - `bin/style.css` — all styling via CSS custom properties / design tokens
 - `bin/tikzjax/` — bundled TikZJax WASM engine
 
-### Backend (Next.js API routes)
+### Backend (shared handlers, dual adapters)
 
 | File | Purpose |
 |---|---|
@@ -175,7 +175,7 @@ A dedicated mobile layout (`bin/mobile.js`) adapts the interface for small scree
 | `pages/api/desmos.js` | Proxies the Desmos calculator JS (keeps the API key server-side) |
 | `pages/api/ssh.js` | SSH-key auth backend (legacy, uses a separate Upstash Redis instance) |
 
-The route files delegate to compatible handlers in `lib/api/`. The legacy `/api/gh.js` and `/api/desmos.js` URLs are kept as rewrites.
+The Next.js route files and root `api/` Vercel Function adapters delegate to the same handlers in `lib/api/`. Keeping both adapters supports the Next.js project and the existing Vercel static deployment without duplicating backend logic. The legacy `/api/gh.js` and `/api/desmos.js` URLs are kept as rewrites.
 
 ### Storage
 
@@ -194,6 +194,7 @@ The route files delegate to compatible handlers in `lib/api/`. The legacy `/api/
 ada/
 ├── app/                        # Next.js App Router (static root route and layout)
 ├── pages/api/                  # Next.js API route adapters
+├── api/                        # Vercel Function adapters for the legacy deployment
 ├── lib/api/                    # Existing server-side API handlers
 ├── scripts/                    # Next.js public-asset preparation
 ├── index.html                  # Legacy app shell used to render the root route
