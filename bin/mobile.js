@@ -148,7 +148,13 @@ function minimizeWindow(id) {
 }
 
 // ===== INIT =====
-window.addEventListener('DOMContentLoaded', async () => {
+async function initializeMobile() {
   restoreModernSession();
   await updatePendingBadge();
-});
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', initializeMobile, { once: true });
+} else {
+  initializeMobile();
+}

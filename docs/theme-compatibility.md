@@ -8,8 +8,9 @@ Ada now has a **Themes** dashboard opened from the paint-palette button in the t
 - Three Ada-native CSS palettes: Ada Default, Midnight, and High Contrast.
 - A visible **Use this theme** action for imported CSS. It makes that custom theme the active base instead of the selected built-in palette. The separate **Enable overlay** toggle layers additional CSS on top.
 - Import, edit, and remove controls for CSS theme files.
-- A versioned BetterDiscord compatibility translator, `ada-bd-compat-4`, that parses CSS structurally, resolves accessible remote imports, and reports selectors and variables it cannot map.
+- A versioned BetterDiscord compatibility translator, `ada-bd-compat-5`, that parses CSS structurally, resolves accessible remote imports, and reports selectors and variables it cannot map.
 - An editor for exact, per-theme selector mappings from a Discord selector to an Ada selector.
+- A coverage summary by Ada component and variable family, with inline quick mapping for unmatched Discord classes and IDs.
 - An emergency safe appearance that disables imported stylesheets. It is available at `?ada-theme-safe=1` and with **Ctrl + Alt + Shift + S**.
 
 Imported theme files are kept in the browser's IndexedDB. They are not uploaded to Ada, GitHub, or an account, and they do not sync across browsers/devices.
@@ -22,7 +23,7 @@ Imported theme files are kept in the browser's IndexedDB. They are not uploaded 
 3. Inspect each theme's **Compatibility report**. An unmapped Discord class is not silently represented as if it had an Ada equivalent.
 4. Use **Edit / map selectors** to add exact selector translations when a matching Ada component exists. Save to re-parse and re-apply the theme.
 
-CSS rules and ordinary CSS at-rules are preserved, including media queries, keyframes, and font-face rules. Plain HTTP(S) `@import` URLs are fetched with CORS and credentials omitted, recursively flattened, and translated when the host permits access. Relative asset URLs in fetched CSS are rebased to that stylesheet's URL. The dashboard reports translated and unresolved import counts. Fetching is bounded to 16 imports, five nested levels, 512 KiB per remote sheet, 2 MiB combined CSS, and an eight-second request timeout. Imports with media/layer/supports qualifiers, CORS or network failures, and imports beyond those limits remain unresolved and are reported; the original import is preserved when possible. In that case, the browser may still load the remote stylesheet, but Discord-only selectors will not affect Ada. You can download that stylesheet and import the combined CSS to get a complete translation report.
+CSS rules and ordinary CSS at-rules are preserved, including media queries, keyframes, and font-face rules. Plain HTTP(S) `@import` URLs are fetched with CORS and credentials omitted, recursively flattened, translated, and wrapped in their original media, layer, and supports qualifiers. Relative asset URLs in fetched CSS are rebased to that stylesheet's URL. The dashboard reports translated and unresolved import counts. Fetching is bounded to 16 imports, five nested levels, 512 KiB per remote sheet, 2 MiB combined CSS, and an eight-second request timeout. CORS or network failures and imports beyond those limits remain unresolved and are reported; the original import is preserved when possible. In that case, the browser may still load the remote stylesheet, but Discord-only selectors will not affect Ada. You can download that stylesheet and import the combined CSS to get a complete translation report.
 
 ## Current translation map
 
@@ -34,22 +35,27 @@ The current mapping version covers selected shared palette variables:
 | `--background-secondary` | `--item` |
 | `--background-secondary-alt` | `--hover` |
 | `--background-base-lowest`, `--background-base-lower`, `--background-base-low` | `--bg`, `--item`, `--hover` |
-| `--background-tertiary` | `--bg` |
+| `--background-tertiary`, `--background-floating` | `--surface-raised` |
+| `--background-modifier-hover` | `--hover` |
+| `--background-modifier-selected`, `--background-modifier-active` | `--selected` |
+| `--background-modifier-accent`, `--border-normal` | `--border` |
+| `--border-strong` | `--border-strong` |
 | `--brand-experiment`, `--brand-500`, `--text-link` | `--accent` |
 | `--brand-experiment-560`, `--brand-600` | `--accent-hover` |
-| `--background-floating` | `--item` |
-| `--background-modifier-hover` | `--hover` |
-| `--background-modifier-selected` | `--selected` |
-| `--background-modifier-accent` | `--border` |
-| `--text-normal`, `--text-default`, `--text-strong`, `--header-primary`, `--header-secondary` | `--fg` |
-| `--interactive-normal` | `--fg` |
-| `--interactive-hover` | `--accent-hover` |
+| `--text-normal`, `--text-default`, `--text-strong`, `--header-primary` | `--fg` |
+| `--text-muted`, `--interactive-muted`, `--header-secondary` | `--muted` |
+| `--interactive-normal`, `--interactive-hover`, `--interactive-active` | `--fg`, `--accent-hover`, `--accent` |
+| `--text-feedback-positive`, `--status-positive` | `--success` |
+| `--text-feedback-warning`, `--status-warning` | `--warning` |
+| `--text-feedback-critical`, `--status-danger`, `--button-danger-background` | `--danger` |
+| `--button-positive-background` | `--success` |
+| `--scrollbar-thin-thumb`, `--scrollbar-thin-track` | `--scrollbar-thumb`, `--scrollbar-track` |
 | `--main-theme-color` | `--accent` |
 | `--category-hover-color` | `--accent-hover` |
 
 Role-specific variables (for mentions, unread dividers, voice channels, message bars, and Discord's neutral `--background-accent` surface) are reported as unmapped instead of being collapsed into Ada's global accent or text tokens. This avoids unrelated Discord colors overriding Ada's main palette. A source alias that would become a self-referential Ada token is retained as an alias and called out in diagnostics.
 
-The selector map translates `#app-mount`, `.appMount-2yBXZl`, hashed `.appMount__…` root selectors, and hashed `.app__…` main-content selectors to Ada's app-shell and file-list hooks. `.theme-dark` and `.theme-light` map to Ada's mode hooks; modern Discord root wrappers such as `.visual-refresh.theme-dark`, `.visual-refresh .theme-dark`, `.visual-refresh.theme-light`, and `.visual-refresh .theme-light` are normalized to Ada's mode root rather than preserved as unmatched wrapper selectors. Other Discord CSS-module names such as `.wrapper_ef3116` are reported when unmapped; many describe UI Ada does not have and need an explicit Ada target only when a meaningful counterpart exists.
+The selector map translates `#app-mount`, `.appMount-2yBXZl`, hashed `.appMount__…` root selectors, and hashed `.app__…` main-content selectors to Ada's app-shell and file-list hooks. `.theme-dark` and `.theme-light` map to Ada's mode hooks; modern Discord root wrappers such as `.visual-refresh.theme-dark`, `.visual-refresh .theme-dark`, `.visual-refresh.theme-light`, and `.visual-refresh .theme-light` are normalized to Ada's mode root rather than preserved as unmatched wrapper selectors. Other Discord CSS-module names such as `.wrapper_ef3116` are reported when unmapped. Use the inline **Map** control to target an existing Ada component; the selected mapping is saved with the theme and retranslated immediately.
 
 ## Ada component hooks
 
@@ -57,14 +63,16 @@ Theme authors can target these stable attributes directly, or use them as the ta
 
 - `[data-ada-component="app-shell"]`
 - `[data-ada-component="toolbar"]`
+- `[data-ada-component="file-navigation"]`
 - `[data-ada-component="path-navigation"]`
 - `[data-ada-component="file-list"]`
 - `[data-ada-component="file-entry"]`
 - `[data-ada-component="file-icon"]`
 - `[data-ada-component="file-name"]`
 - `[data-ada-component="file-actions"]` and `[data-ada-component="file-action"]`
+- `[data-ada-component="workspace"]`, `[data-ada-component="workspace-intro"]`, `[data-ada-component="workspace-panel"]`, and `[data-ada-component="workspace-tile"]`
 - `[data-ada-component="preview-area"]`, `[data-ada-component="preview-window"]`, `[data-ada-component="window-titlebar"]`, and `[data-ada-component="preview-body"]`
-- `[data-ada-component="mobile-preview"]`, `[data-ada-component="taskbar"]`, and `[data-ada-component="theme-dashboard"]`
+- `[data-ada-component="mobile-preview"]` and `[data-ada-component="theme-dashboard"]`
 
 A per-theme selector map is a JSON object whose keys are complete source selectors and whose values are single Ada selectors. Example:
 

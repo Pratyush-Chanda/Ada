@@ -16,6 +16,7 @@
 
   async function initMarkdownPDFEmbeds(container) {
     const embeds = [...container.querySelectorAll('.ada-pdf-embed[data-pdf-src]')];
+    if (embeds.length) await window.AdaVendorLoader.load('pdf');
     await Promise.all(embeds.map(async (embed) => {
       try {
         if (!window.AdaPdfViewer) throw new Error('Ada’s PDF.js viewer did not load');
@@ -38,6 +39,7 @@
    * @param {Element} container – the wrapper element that received the HTML
    */
   async function initMarkdownFeatures(container) {
+    await window.AdaVendorLoader.loadMarkdownFeatures(container);
     if (typeof window.obsidianInitCalloutFolds === 'function') {
       window.obsidianInitCalloutFolds(container);
     }

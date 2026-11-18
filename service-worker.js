@@ -5,45 +5,29 @@
 //   - GitHub API calls → Network-only (never cache)
 //   - Everything else → Network-first, fall back to cache, fall back to offline page
 
-const CACHE_VERSION = 'webman-v25';
+const CACHE_VERSION = 'webman-v27';
 const OFFLINE_PAGE  = 'offline.html';
 
 const APP_SHELL = [
   './',
-  'index.html',
   'offline.html',
   'manifest.json',
   'favicon.png',
   'bin/style.css?v=24',
   'bin/theme-compat.js',
   'bin/theme-runtime.js',
+  'bin/vendor-loader.js',
   'bin/themes/ada-default.theme.css',
   'bin/themes/ada-midnight.theme.css',
   'bin/themes/ada-contrast.theme.css',
   'bin/file-search.js?v=13',
-  'bin/pdf-viewer.js?v=19',
   'bin/app.js?v=25',
   'bin/auth.js?v=19',
   'bin/upload.js?v=19',
   'bin/mobile.js?v=23',
   'bin/markdown.js?v=19',
-  'bin/md-init.js',
-  'bin/obsidian-markdown-it.js?v=19',
-  // tikzjax.js is 7 MB — cached on first use by the network-first handler, not pre-cached here
-  'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap',
   'https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap',
   'https://cdn.jsdelivr.net/npm/feather-icons@4.29.2/dist/feather.min.js',
-  'https://cdn.jsdelivr.net/npm/markdown-it@14/dist/markdown-it.min.js',
-  'https://cdn.jsdelivr.net/npm/markdown-it-sub@1/dist/markdown-it-sub.min.js',
-  'https://cdn.jsdelivr.net/npm/markdown-it-sup@1/dist/markdown-it-sup.min.js',
-  'https://cdn.jsdelivr.net/npm/markdown-it-footnote@3/dist/markdown-it-footnote.min.js',
-  'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js',
-  'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css',
-  'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css',
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
 ];
 
 const APP_SHELL_URLS = new Set(APP_SHELL.map(path => new URL(path, self.registration.scope).href));

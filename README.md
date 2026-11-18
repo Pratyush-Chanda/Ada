@@ -1,6 +1,6 @@
 # Ada
 
-> A self-hosted document browser and knowledge management web app — deployed on Vercel, backed by GitHub.
+> A self-hosted document browser and knowledge management web app — built with Next.js, deployed on Vercel, backed by GitHub.
 
 ![Ada — main interface](placeholder-main-interface.png)
 
@@ -23,7 +23,7 @@
 
 Ada is a web-based file browser and document viewer that uses a **GitHub repository as its file store**. Files live in your repo; Ada reads them through the GitHub API and renders them in a clean, feature-rich interface — with full support for Markdown, PDFs, Office documents, spreadsheets, math notation, diagrams, and code.
 
-The app is deployed entirely on Vercel (static frontend + serverless API functions). There is no dedicated server to maintain — GitHub holds the content, Upstash Redis holds user sessions, and Vercel Blob holds pending uploads until they are reviewed.
+The app runs on Next.js and is deployed on Vercel. There is no dedicated server to maintain — GitHub holds the content, Upstash Redis holds user sessions, and Vercel Blob holds pending uploads until they are reviewed. The main route is statically rendered from the existing Ada shell while its browser interactions are migrated incrementally; Next.js API routes preserve the existing server-side contracts.
 
 ---
 
@@ -135,14 +135,13 @@ A dedicated mobile layout (`bin/mobile.js`) adapts the interface for small scree
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                     Browser                         │
-│  index.html + bin/*.js + bin/style.css              │
-│  (Vanilla JS, no framework)                         │
+│                Next.js App Router                    │
+│      Static HTML shell + existing browser runtime    │
 └────────────────────┬────────────────────────────────┘
                      │  fetch()
           ┌──────────▼──────────┐
-          │   Vercel Serverless  │
-          │   /api/*.js / .mjs   │
+          │  Next.js API routes  │
+          │   pages/api/*        │
           └──┬────┬─────┬───┬───┘
              │    │     │   │
      GitHub  │  Blob  Redis  Resend
@@ -151,7 +150,9 @@ A dedicated mobile layout (`bin/mobile.js`) adapts the interface for small scree
 
 ### Frontend
 
-- Pure HTML5 + CSS + Vanilla JavaScript — no frontend framework
+- Next.js App Router statically renders the main route from the legacy HTML shell. Existing browser scripts are loaded in dependency order to preserve current interactions.
+- `scripts/prepare-next-public.cjs` stages static assets and auxiliary pages under `public/` for Next.js development/builds; generated files are not tracked.
+- `app/page.js` owns the root route; `app/layout.js` sets metadata, styles, and script loading.
 - `bin/app.js` — core file tree, window management, preview routing
 - `bin/auth.js` — session/token management on the client
 - `bin/modern-auth.js` — email+password auth UI controllers
@@ -162,17 +163,19 @@ A dedicated mobile layout (`bin/mobile.js`) adapts the interface for small scree
 - `bin/style.css` — all styling via CSS custom properties / design tokens
 - `bin/tikzjax/` — bundled TikZJax WASM engine
 
-### Backend (Vercel Serverless Functions)
+### Backend (Next.js API routes)
 
 | File | Purpose |
 |---|---|
-| `api/config.js` | Exposes public env vars to the frontend on app load |
-| `api/auth.mjs` | Register, login, forgot password, reset password |
-| `api/gh.js` | GitHub Contents API proxy (getFile, putFile, deleteFile) |
-| `api/raw.js` | Serves raw file bytes from the GitHub repo (for Office viewer) |
-| `api/blob.js` | Vercel Blob proxy (upload, delete, fetch) |
-| `api/desmos.js` | Proxies the Desmos calculator JS (keeps the API key server-side) |
-| `api/ssh.js` | SSH-key auth backend (legacy, uses a separate Upstash Redis instance) |
+| `pages/api/config.js` | Exposes public env vars to the frontend on app load |
+| `pages/api/auth.js` | Register, login, forgot password, reset password |
+| `pages/api/gh.js` | GitHub Contents API proxy (getFile, putFile, deleteFile) |
+| `pages/api/raw.js` | Serves raw file bytes from the GitHub repo (for Office viewer) |
+| `pages/api/blob.js` | Vercel Blob proxy (upload, delete, fetch) |
+| `pages/api/desmos.js` | Proxies the Desmos calculator JS (keeps the API key server-side) |
+| `pages/api/ssh.js` | SSH-key auth backend (legacy, uses a separate Upstash Redis instance) |
+
+The route files delegate to compatible handlers in `lib/api/`. The legacy `/api/gh.js` and `/api/desmos.js` URLs are kept as rewrites.
 
 ### Storage
 
@@ -189,23 +192,18 @@ A dedicated mobile layout (`bin/mobile.js`) adapts the interface for small scree
 
 ```
 ada/
-├── index.html                  # App entry point (single-page app shell)
+├── app/                        # Next.js App Router (static root route and layout)
+├── pages/api/                  # Next.js API route adapters
+├── lib/api/                    # Existing server-side API handlers
+├── scripts/                    # Next.js public-asset preparation
+├── index.html                  # Legacy app shell used to render the root route
 ├── offline.html                # Shown by service worker when offline
 ├── installer.html              # Setup wizard for new instances
 ├── service-worker.js           # PWA caching strategy
 ├── manifest.json               # PWA manifest (name, icons, theme colour)
 ├── files.json                  # File tree manifest (read by the app)
 ├── favicon.png                 # App icon
-├── package.json                # npm dependencies (Vercel runtime)
-│
-├── api/                        # Vercel serverless functions
-│   ├── config.js               # Public env var endpoint
-│   ├── auth.mjs                # Auth (register / login / password reset)
-│   ├── gh.js                   # GitHub Contents API proxy
-│   ├── raw.js                  # Raw file serving proxy
-│   ├── blob.js                 # Vercel Blob proxy
-│   ├── desmos.js               # Desmos API proxy
-│   └── ssh.js                  # SSH auth backend (legacy)
+├── package.json                # Next.js and app dependencies
 │
 ├── bin/                        # Frontend JS & static assets
 │   ├── app.js                  # Core app logic (file tree, windows, routing)
@@ -265,6 +263,8 @@ Set these in your Vercel project dashboard under **Settings → Environment Vari
 
 > `KV_REST_API_URL` and `KV_REST_API_TOKEN` are auto-populated by the **Vercel × Upstash Redis** marketplace integration if you connect it from the Vercel dashboard. Same for `BLOB_READ_WRITE_TOKEN` with the Vercel Blob integration.
 
+The app loads PDF, Office, and Markdown-rendering libraries only when a matching file or feature is opened. `files.json` uses a five-minute shared CDN cache with stale-while-revalidate; raw file metadata and small file bodies use the configured Upstash Redis cache. Raw file responses remain private by default. Only set `GITHUB_REPO_PUBLIC=true` when the configured content repository is public.
+
 ---
 
 ## Getting Started
@@ -278,7 +278,7 @@ Set these in your Vercel project dashboard under **Settings → Environment Vari
 
 ### Option B — Manual Setup
 
-**Prerequisites:** Node.js 18+, a Vercel account, an Upstash account.
+**Prerequisites:** Node.js 20.9+, a Vercel account, an Upstash account.
 
 1. **Fork / clone the repository**
 
@@ -321,6 +321,8 @@ Set these in your Vercel project dashboard under **Settings → Environment Vari
    ```
 
    The app will be available at `http://localhost:3000`.
+
+   `npm run build` creates the production Next.js build; use `npm start` to run it locally.
 
 ---
 

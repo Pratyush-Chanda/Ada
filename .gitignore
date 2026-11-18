@@ -7,3 +7,13 @@ bench.txt.*.tmp
 __pycache__/
 *.py[cod]
 node_modules/
+/.next/
+/public/bin/
+/public/community/
+/public/office-addin/
+/public/favicon.png
+/public/files.json
+/public/manifest.json
+/public/offline.html
+/public/installer.html
+/public/service-worker.js

@@ -261,7 +261,7 @@ async function fetchTree() {
   showStatus("Loading files...", true);
 
   try {
-    const res = await fetch("files.json?" + new Date().getTime());
+    const res = await fetch("files.json", { cache: "no-cache" });
     if (!res.ok) {
       throw new Error(`Failed to fetch: ${res.status}`);
     }
@@ -273,12 +273,6 @@ async function fetchTree() {
     lastHash = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
     initialLoadComplete = true;
 
-    try {
-      lastCommit = await fetchLatestCommit();
-    } catch (e) {
-      console.warn("Failed to fetch initial commit:", e);
-    }
-
     rootNode = tree;
     fileSearchIndex = window.AdaFileSearch.buildIndex(tree, {
       excludedRootFiles: EXCLUDED_ROOT_FILES
@@ -288,6 +282,10 @@ async function fetchTree() {
     renderFolder(tree);
     updatePathNav();
     syncWorkspaceEmptyState();
+
+    fetchLatestCommit().then(commit => {
+      if (commit) lastCommit = commit;
+    });
 
     const fontPromise = new Promise((resolve) => {
   const testSpan = document.createElement("span");
@@ -451,6 +449,7 @@ function renderWorkspaceRecentFiles() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "workspace-tile workspace-recent-item";
+    button.dataset.adaComponent = "workspace-tile";
     button.setAttribute("aria-label", `Open recently viewed file ${result.node.name || recent.name}, ${result.path}`);
 
     const icon = document.createElement("span");
@@ -496,6 +495,7 @@ function renderWorkspaceMinimizedWindows() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "workspace-tile workspace-minimized-item";
+    button.dataset.adaComponent = "workspace-tile";
     button.setAttribute("aria-label", `Restore minimized window ${name}${path ? `, ${path}` : ""}`);
 
     const icon = document.createElement("span");
@@ -1232,7 +1232,11 @@ async function fetchFileContent(path, filename, container, options = {}) {
         }
       }
 
-      const response = await fetch(fetchUrl(path));
+      const vendor = fileExt === 'docx' ? 'docx' : fileExt === 'xlsx' || fileExt === 'xls' ? 'xlsx' : fileExt === 'pptx' ? 'pptx' : null;
+      const [response] = await Promise.all([
+        fetch(fetchUrl(path)),
+        vendor ? window.AdaVendorLoader.load(vendor) : Promise.resolve()
+      ]);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const arrayBuffer = await response.arrayBuffer();
 
@@ -1328,13 +1332,19 @@ async function fetchFileContent(path, filename, container, options = {}) {
 
     } else if (ext === 'pdf') {
       container.style.cssText = 'padding:0;overflow:hidden;display:flex;flex-direction:column;flex-grow:1;min-height:0;';
-      const response = await fetch(fetchUrl(path));
+      const [response] = await Promise.all([
+        fetch(fetchUrl(path)),
+        window.AdaVendorLoader.load('pdf')
+      ]);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       if (!window.AdaPdfViewer) throw new Error("Ada’s PDF.js viewer did not load");
       await window.AdaPdfViewer.render(container, await response.arrayBuffer());
 
     } else if (ext === 'md' || ext === 'markdown') {
-      const response = await fetch(fetchUrl(path));
+      const [response] = await Promise.all([
+        fetch(fetchUrl(path)),
+        window.AdaVendorLoader.load('markdown')
+      ]);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const text = await response.text();
       const wrapper = document.createElement('div');
@@ -1342,7 +1352,7 @@ async function fetchFileContent(path, filename, container, options = {}) {
       wrapper.innerHTML = markdownToHTML(text, path);
       container.innerHTML = '';
       container.appendChild(wrapper);
-      setTimeout(function () { initMarkdownFeatures(wrapper); }, 0);
+      await initMarkdownFeatures(wrapper);
 
     } else {
       // All other file types: display as plain text
@@ -1430,11 +1440,17 @@ function openCommunity() {
   }
 }
 
-window.addEventListener("DOMContentLoaded", async () => {
+async function initializeApp() {
   await fetchConfig();
   fetchTree();
   maybeShowVercelPopup();
-});
+}
+
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", initializeApp, { once: true });
+} else {
+  initializeApp();
+}
 
 
 				     

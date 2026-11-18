@@ -2,7 +2,7 @@ const postcss = require("postcss");
 const selectorParser = require("postcss-selector-parser");
 const valueParser = require("postcss-value-parser");
 
-const COMPATIBILITY_MAP_VERSION = "ada-bd-compat-4";
+const COMPATIBILITY_MAP_VERSION = "ada-bd-compat-5";
 const MAX_REMOTE_IMPORTS = 16;
 const MAX_REMOTE_IMPORT_DEPTH = 5;
 const MAX_REMOTE_IMPORT_BYTES = 512 * 1024;
@@ -17,29 +17,67 @@ const DISCORD_VARIABLE_MAP = Object.freeze({
   "--background-base-lowest": "--bg",
   "--background-base-lower": "--item",
   "--background-base-low": "--hover",
-  "--background-tertiary": "--bg",
-  "--background-floating": "--item",
+  "--background-tertiary": "--surface-raised",
+  "--background-floating": "--surface-raised",
   "--background-modifier-hover": "--hover",
   "--background-modifier-selected": "--selected",
+  "--background-modifier-active": "--selected",
   "--background-modifier-accent": "--border",
+  "--border-normal": "--border",
+  "--border-strong": "--border-strong",
   "--text-normal": "--fg",
   "--header-primary": "--fg",
-  "--header-secondary": "--fg",
+  "--text-muted": "--muted",
+  "--header-secondary": "--muted",
   "--interactive-normal": "--fg",
   "--interactive-hover": "--accent-hover",
+  "--interactive-active": "--accent",
+  "--interactive-muted": "--muted",
   "--brand-experiment": "--accent",
   "--brand-experiment-560": "--accent-hover",
   "--brand-500": "--accent",
   "--brand-600": "--accent-hover",
   "--text-default": "--fg",
   "--text-strong": "--fg",
+  "--text-feedback-positive": "--success",
+  "--text-feedback-warning": "--warning",
+  "--text-feedback-critical": "--danger",
+  "--button-positive-background": "--success",
+  "--button-danger-background": "--danger",
+  "--status-positive": "--success",
+  "--status-warning": "--warning",
+  "--status-danger": "--danger",
   "--text-link": "--accent",
+  "--scrollbar-thin-thumb": "--scrollbar-thumb",
+  "--scrollbar-thin-track": "--scrollbar-track",
   "--main-theme-color": "--accent",
   "--category-hover-color": "--accent-hover"
 });
 
 const ADA_APP_SHELL = '[data-ada-component="app-shell"]';
 const ADA_FILE_LIST = '[data-ada-component="file-list"]';
+const ADA_SELECTOR_TARGETS = Object.freeze([
+  { selector: ADA_APP_SHELL, label: "Application shell" },
+  { selector: '[data-ada-component="toolbar"]', label: "Toolbar" },
+  { selector: '[data-ada-component="file-navigation"]', label: "File navigation" },
+  { selector: '[data-ada-component="path-navigation"]', label: "Path navigation" },
+  { selector: ADA_FILE_LIST, label: "File list" },
+  { selector: '[data-ada-component="file-entry"]', label: "File entry" },
+  { selector: '[data-ada-component="file-icon"]', label: "File icon" },
+  { selector: '[data-ada-component="file-name"]', label: "File name" },
+  { selector: '[data-ada-component="file-actions"]', label: "File actions" },
+  { selector: '[data-ada-component="file-action"]', label: "File action" },
+  { selector: '[data-ada-component="workspace"]', label: "Workspace" },
+  { selector: '[data-ada-component="workspace-intro"]', label: "Workspace introduction" },
+  { selector: '[data-ada-component="workspace-panel"]', label: "Workspace section" },
+  { selector: '[data-ada-component="workspace-tile"]', label: "Workspace tile" },
+  { selector: '[data-ada-component="preview-area"]', label: "Preview area" },
+  { selector: '[data-ada-component="preview-window"]', label: "Preview window" },
+  { selector: '[data-ada-component="window-titlebar"]', label: "Window title bar" },
+  { selector: '[data-ada-component="preview-body"]', label: "Preview content" },
+  { selector: '[data-ada-component="mobile-preview"]', label: "Mobile preview" },
+  { selector: '[data-ada-component="theme-dashboard"]', label: "Theme dashboard" }
+]);
 const DISCORD_SELECTOR_MAP = Object.freeze({
   "#app-mount": ADA_APP_SHELL,
   ".appMount-2yBXZl": ADA_APP_SHELL,
@@ -75,7 +113,7 @@ function parseThemeMetadata(cssText) {
 }
 
 function isDiscordVariable(name) {
-  return /^--(?:background-|background$|text-|header-|interactive-|brand-|channel|mention|unread|new-messages|voice-channel|channel-limit|deprecated-|elevation-)/i.test(name);
+  return /^--(?:background-|background$|text-|header-|interactive-|brand-|border-|scrollbar-|status-|button-danger-|button-positive-|channel|mention|unread|new-messages|voice-channel|channel-limit|deprecated-|elevation-)/i.test(name);
 }
 
 function isLikelyHashedDiscordClass(name) {
@@ -83,29 +121,69 @@ function isLikelyHashedDiscordClass(name) {
   return Boolean(match && /[A-Za-z]/.test(match[1]) && /\d/.test(match[1]));
 }
 
-function readImportTarget(params) {
+function readImportParams(params) {
   const parsed = valueParser(String(params || ""));
-  const first = parsed.nodes.find((node) => node.type !== "space" && node.type !== "comment");
-  if (!first) return "";
-  if (first.type === "string") return first.value;
-  if (first.type === "function" && first.value.toLowerCase() === "url") {
+  const nodes = parsed.nodes;
+  const targetIndex = nodes.findIndex((node) => node.type !== "space" && node.type !== "comment");
+  if (targetIndex < 0) return { target: "", layer: null, supports: "", media: "" };
+
+  const first = nodes[targetIndex];
+  let target = "";
+  if (first.type === "string") {
+    target = first.value;
+  } else if (first.type === "function" && first.value.toLowerCase() === "url") {
     const value = valueParser.stringify(first.nodes).trim();
-    return value.replace(/^(?:(['"])(.*)\1)$/, "$2");
+    target = value.replace(/^(?:(['"])(.*)\1)$/, "$2");
   }
-  return valueParser.stringify(first).trim();
+  if (!target) return { target: "", layer: null, supports: "", media: "" };
+
+  let layer = null;
+  let supports = "";
+  const mediaNodes = [];
+  for (const node of nodes.slice(targetIndex + 1)) {
+    if (node.type === "function" && node.value.toLowerCase() === "layer" && layer === null) {
+      layer = valueParser.stringify(node.nodes).trim();
+    } else if (node.type === "word" && node.value.toLowerCase() === "layer" && layer === null) {
+      layer = "";
+    } else if (node.type === "function" && node.value.toLowerCase() === "supports" && !supports) {
+      supports = valueParser.stringify(node.nodes).trim();
+    } else {
+      mediaNodes.push(node);
+    }
+  }
+  return {
+    target,
+    layer,
+    supports,
+    media: valueParser.stringify(mediaNodes).trim()
+  };
 }
 
-function readPlainImportTarget(params) {
-  const parsed = valueParser(String(params || ""));
-  const significant = parsed.nodes.filter((node) => node.type !== "space" && node.type !== "comment");
-  if (significant.length !== 1) return null;
-  const first = significant[0];
-  if (first.type === "string") return first.value;
-  if (first.type === "function" && first.value.toLowerCase() === "url") {
-    const value = valueParser.stringify(first.nodes).trim();
-    return value.replace(/^(?:(['"])(.*)\1)$/, "$2");
+function readImportTarget(params) {
+  return readImportParams(params).target;
+}
+
+function supportsAtRuleCondition(condition) {
+  const value = String(condition || "").trim();
+  if (!value || value.startsWith("(") || /^(?:not\b|selector\(|font-tech\(|font-format\(|style\()/i.test(value)) {
+    return value;
   }
-  return null;
+  return `(${value})`;
+}
+
+function wrapImportedNodes(nodes, qualifiers) {
+  let wrappedNodes = nodes;
+  const wrappers = [];
+  if (qualifiers.layer !== null) wrappers.push({ name: "layer", params: qualifiers.layer });
+  if (qualifiers.supports) wrappers.push({ name: "supports", params: supportsAtRuleCondition(qualifiers.supports) });
+  if (qualifiers.media) wrappers.push({ name: "media", params: qualifiers.media });
+
+  for (const wrapper of wrappers.reverse()) {
+    const atRule = postcss.atRule({ name: wrapper.name, params: wrapper.params });
+    atRule.append(wrappedNodes);
+    wrappedNodes = [atRule];
+  }
+  return wrappedNodes;
 }
 
 function importWarning(target) {
@@ -169,20 +247,20 @@ async function resolveRemoteImports(cssText, options = {}) {
 
     for (const rule of atRules) {
       if (!rule.parent) continue;
-      const target = readImportTarget(rule.params);
-      const plainTarget = readPlainImportTarget(rule.params);
-      if (!plainTarget) {
+      const qualifiers = readImportParams(rule.params);
+      const target = qualifiers.target;
+      if (!target) {
         imports.add(target || "(URL could not be parsed)");
-        addUnresolved(target, "Only plain URL imports without media, layer, or supports qualifiers can be translated.");
+        addUnresolved(target, "Only quoted or url() stylesheet imports can be translated.");
         continue;
       }
 
       let url;
       try {
-        url = new URL(plainTarget, baseUrl || undefined);
+        url = new URL(target, baseUrl || undefined);
       } catch (_) {
-        imports.add(plainTarget);
-        addUnresolved(plainTarget, "The import URL is relative to a local theme file and has no remote base URL.");
+        imports.add(target);
+        addUnresolved(target, "The import URL is relative to a local theme file and has no remote base URL.");
         continue;
       }
 
@@ -274,7 +352,8 @@ async function resolveRemoteImports(cssText, options = {}) {
       });
       rewriteRelativeAssetUrls(importedRoot, entry.url);
       const importedNodes = importedRoot.nodes.map((node) => node.clone());
-      if (importedNodes.length) rule.replaceWith(...importedNodes);
+      const wrappedNodes = wrapImportedNodes(importedNodes, qualifiers);
+      if (wrappedNodes.length) rule.replaceWith(...wrappedNodes);
       else rule.remove();
     }
   }
@@ -303,11 +382,13 @@ function mapCustomProperties(root, warnings, translated) {
     }
     if (mappedProperty && aliasesOwnTarget) {
       warnings.add(`Kept ${declaration.prop} as a source alias to avoid a self-referential ${mappedProperty} declaration.`);
+      translated.unmappedVariables.push(declaration.prop);
     } else if (mappedProperty) {
       translated.variables.push({ from: declaration.prop, to: mappedProperty });
       declaration.prop = mappedProperty;
     } else if (isDiscordVariable(declaration.prop)) {
       warnings.add(`Unmapped Discord variable declaration: ${declaration.prop}`);
+      translated.unmappedVariables.push(declaration.prop);
     }
 
     parsedValue.walk((node) => {
@@ -320,10 +401,49 @@ function mapCustomProperties(root, warnings, translated) {
         variable.value = mapped;
       } else if (isDiscordVariable(variable.value)) {
         warnings.add(`Unmapped Discord variable reference: ${variable.value}`);
+        translated.unmappedVariables.push(variable.value);
       }
     });
     declaration.value = parsedValue.toString();
   });
+}
+
+function variableFamily(name) {
+  if (/^--(?:background-|surface-)/i.test(name)) return "surfaces";
+  if (/^--(?:status-|button-danger-|button-positive-|text-feedback-)/i.test(name)) return "status";
+  if (/^--(?:text-|header-)/i.test(name)) return "text";
+  if (/^--interactive-/i.test(name)) return "interaction";
+  if (/^--(?:brand-|main-theme-color$|category-hover-color$)/i.test(name)) return "accents";
+  if (/^--(?:border-|scrollbar-)/i.test(name)) return "borders and scrollbars";
+  return "other";
+}
+
+function compatibilityCoverage(translated) {
+  const selectorsByTarget = {};
+  for (const mapping of translated.selectors) {
+    const component = mapping.to.match(/data-ada-component=["']([^"']+)["']/)?.[1]
+      || (mapping.to.includes("data-theme-mode") ? "appearance mode" : "custom selector");
+    selectorsByTarget[component] = (selectorsByTarget[component] || 0) + 1;
+  }
+
+  const variablesByFamily = {};
+  for (const mapping of translated.variables) {
+    const family = variableFamily(mapping.from);
+    variablesByFamily[family] = (variablesByFamily[family] || 0) + 1;
+  }
+
+  return {
+    selectors: {
+      mapped: translated.selectors.length,
+      unmapped: new Set(translated.unmappedSelectors).size,
+      byTarget: selectorsByTarget
+    },
+    variables: {
+      mapped: translated.variables.length,
+      unmapped: new Set(translated.unmappedVariables).size,
+      byFamily: variablesByFamily
+    }
+  };
 }
 
 function cloneSelectorNodes(selectorText) {
@@ -381,14 +501,16 @@ function translateSelector(selectorText, customSelectorMap, warnings, translated
       selector.walk((node) => {
         if (node.type !== "class" && node.type !== "id") return;
         const literal = `${node.type === "class" ? "." : "#"}${node.value}`;
-        const target = node.type === "class"
-          ? DISCORD_CLASS_MAP[node.value] || hashedClassTarget(node.value)
-          : DISCORD_ID_MAP[node.value];
+        const target = customSelectorMap[literal]
+          || (node.type === "class"
+            ? DISCORD_CLASS_MAP[node.value] || hashedClassTarget(node.value)
+            : DISCORD_ID_MAP[node.value]);
         if (target) {
           node.replaceWith(...cloneSelectorNodes(target));
           translated.selectors.push({ from: literal, to: target });
         } else if (isLikelyHashedDiscordClass(node.value)) {
           warnings.add(`Unmapped Discord selector component: ${literal}`);
+          translated.unmappedSelectors.push(literal);
         }
       });
     });
@@ -409,7 +531,7 @@ function translateBetterDiscordTheme(cssText, options = {}) {
   const source = String(cssText);
   const metadata = parseThemeMetadata(source);
   const warnings = new Set();
-  const translated = { variables: [], selectors: [] };
+  const translated = { variables: [], selectors: [], unmappedVariables: [], unmappedSelectors: [] };
   const selectorMap = options.selectorMap && typeof options.selectorMap === "object"
     ? options.selectorMap
     : {};
@@ -429,10 +551,12 @@ function translateBetterDiscordTheme(cssText, options = {}) {
       rule.selector = translateSelector(rule.selector, selectorMap, warnings, translated);
     } catch (_) {
       warnings.add(`Selector could not be parsed or translated: ${rule.selector}`);
+      translated.unmappedSelectors.push(rule.selector);
     }
   });
 
   mapCustomProperties(root, warnings, translated);
+  const coverage = compatibilityCoverage(translated);
 
   return {
     css: root.toString(),
@@ -443,6 +567,7 @@ function translateBetterDiscordTheme(cssText, options = {}) {
     translated: {
       variableCount: translated.variables.length,
       selectorCount: translated.selectors.length,
+      coverage,
       variables: translated.variables,
       selectors: translated.selectors
     }
@@ -476,6 +601,7 @@ module.exports = {
   COMPATIBILITY_MAP_VERSION,
   DISCORD_VARIABLE_MAP,
   DISCORD_SELECTOR_MAP,
+  ADA_SELECTOR_TARGETS,
   parseThemeMetadata,
   resolveRemoteImports,
   translateBetterDiscordTheme,

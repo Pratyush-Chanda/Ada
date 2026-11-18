@@ -24,12 +24,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <!-- markdown-it (replaces marked) -->
-  <script src="https://cdn.jsdelivr.net/npm/markdown-it@14/dist/markdown-it.min.js"></script>
-  <!-- markdown-it optional plugins -->
-  <script src="https://cdn.jsdelivr.net/npm/markdown-it-sub@1/dist/markdown-it-sub.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/markdown-it-sup@1/dist/markdown-it-sup.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/markdown-it-footnote@3/dist/markdown-it-footnote.min.js"></script>
   <!-- MathJax 3 — LaTeX math rendering ($inline$ and $$block$$) -->
   <script>
   MathJax = {
@@ -45,27 +39,12 @@
     }
   };
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-  <!-- TikZJax — TikZ/PGF diagram rendering (```tikz blocks) -->
-  <!-- Engine lives in bin/tikzjax/output/; fonts in bin/tikzjax/css/ -->
-  <link rel="stylesheet" href="bin/tikzjax/css/fonts.css">
-  <script src="bin/tikzjax/output/tikzjax.js"></script>
-  <!-- highlight.js — syntax highlighting for code blocks -->
-  <link id="adaHighlightLight" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css" media="all">
-  <link id="adaHighlightDark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css" media="all" disabled>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
-  <!-- Mermaid — diagram / flowchart rendering (```mermaid blocks) -->
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
-  <!-- Desmos Graphing Calculator API -->
-  <script src="/api/desmos.js"></script>
-  <!-- Obsidian-syntax compatibility layer (replaces obsidian-md.js) -->
-  <script src="bin/obsidian-markdown-it.js?v=19"></script>
   <!-- Google reCAPTCHA v3 -->
   <script src="https://www.google.com/recaptcha/api.js?render=6LcxfwktAAAAAFr3FmBO5LHM3m_j33369aSsOsOf" async defer></script>
+  <script src="bin/vendor-loader.js"></script>
   <!-- Modern Email + Password Auth System -->
   <script src="bin/modern-auth.js"></script>
   <link rel="stylesheet" href="bin/style.css?v=24">
-  <script src="bin/md-init.js"></script>
 </head>
 <body>
   <div id="splash"><img src="favicon.png" alt="Loading..." /></div>
@@ -444,7 +423,7 @@
     </div>
     <div class="app-main">
       <div class="file-drawer-backdrop" id="fileDrawerBackdrop"></div>
-      <aside class="file-drawer is-open" id="fileDrawer" aria-label="File navigation">
+      <aside class="file-drawer is-open" id="fileDrawer" aria-label="File navigation" data-ada-component="file-navigation">
         <div class="drawer-heading">
           <a class="drawer-brand" href="#" onclick="event.preventDefault();goToRoot()" aria-label="Ada home">Ada</a>
           <div class="drawer-heading-actions">
@@ -457,22 +436,22 @@
         </div>
         <div class="list-view" id="listView" data-ada-component="file-list"></div>
       </aside>
-      <main class="workspace" id="workspace" aria-label="Document workspace">
+      <main class="workspace" id="workspace" aria-label="Document workspace" data-ada-component="workspace">
         <section class="workspace-empty" id="workspaceEmptyState">
-          <div class="workspace-intro" id="workspaceIntro">
+          <div class="workspace-intro" id="workspaceIntro" data-ada-component="workspace-intro">
             <div class="workspace-empty-icon"><i data-feather="file-text" aria-hidden="true"></i></div>
             <h2>Your workspace</h2>
             <p>Choose a file to open it here. Your documents stay in Ada’s familiar preview windows.</p>
             <button class="workspace-browse-button" id="openFilesFromWorkspace" type="button"><i data-feather="folder" aria-hidden="true"></i><span>Browse files</span></button>
           </div>
-          <section class="workspace-panel" id="workspaceRecentsSection" aria-labelledby="workspaceRecentHeading" hidden>
+          <section class="workspace-panel" id="workspaceRecentsSection" aria-labelledby="workspaceRecentHeading" data-ada-component="workspace-panel" hidden>
             <div class="workspace-panel-heading">
               <h3 id="workspaceRecentHeading"><i data-feather="clock" aria-hidden="true"></i><span>Recently opened files</span></h3>
               <button class="recent-clear-all" id="workspaceClearRecents" type="button" onclick="clearRecentFiles()" disabled><i data-feather="trash-2" aria-hidden="true"></i><span>Clear all</span></button>
             </div>
             <div class="workspace-tile-grid" id="workspaceRecentFiles" aria-live="polite"></div>
           </section>
-          <section class="workspace-panel" id="workspaceMinimizedSection" aria-labelledby="workspaceMinimizedHeading" hidden>
+          <section class="workspace-panel" id="workspaceMinimizedSection" aria-labelledby="workspaceMinimizedHeading" data-ada-component="workspace-panel" hidden>
             <div class="workspace-panel-heading">
               <h3 id="workspaceMinimizedHeading"><i data-feather="minus-square" aria-hidden="true"></i><span>Minimised windows</span></h3>
             </div>
@@ -588,16 +567,11 @@
     </div>
   </div>
 
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.5/dist/docx-preview.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="bin/gh-proxy.js"></script>
 <script src="bin/theme-compat.js"></script>
 <script src="bin/theme-runtime.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.2/dist/feather.min.js"></script>
 <script>window.feather?.replace({ 'stroke-width': 1.8 });</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="bin/pdf-viewer.js?v=19"></script>
 <script src="bin/file-search.js?v=13"></script>
 <script src="bin/app.js?v=25"></script>
 <script src="bin/markdown.js?v=19"></script>

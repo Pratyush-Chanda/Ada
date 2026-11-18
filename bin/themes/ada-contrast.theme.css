@@ -4,15 +4,24 @@ html[data-theme-mode="dark"] {
   color-scheme: dark;
   --bg: #000000;
   --fg: #ffffff;
+  --muted: #e6e6e6;
   --item: #080808;
+  --surface-raised: #080808;
   --hover: #1b1b1b;
   --accent: #ffff00;
   --accent-hover: #fff68a;
   --accent-subtle: rgba(255, 255, 0, 0.18);
+  --danger: #ff6b6b;
+  --success: #00ff80;
+  --warning: #ffdf00;
+  --focus: #ffff00;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.8);
+  --scrollbar-track: #000000;
   --btn-bg: #111111;
   --btn-hover: #262626;
   --selected: rgba(255, 255, 0, 0.22);
   --border: #ffffff;
+  --border-strong: #ffffff;
   --border-subtle: rgba(255, 255, 255, 0.5);
   --radius: 4px;
   --radius-sm: 2px;
@@ -24,15 +33,24 @@ html[data-theme-mode="light"] {
   color-scheme: light;
   --bg: #ffffff;
   --fg: #000000;
+  --muted: #333333;
   --item: #ffffff;
+  --surface-raised: #f0f0f0;
   --hover: #f0f0f0;
   --accent: #002db3;
   --accent-hover: #001f80;
   --accent-subtle: rgba(0, 45, 179, 0.12);
+  --danger: #b00020;
+  --success: #006600;
+  --warning: #805500;
+  --focus: #002db3;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.7);
+  --scrollbar-track: #ffffff;
   --btn-bg: #f0f0f0;
   --btn-hover: #dedede;
   --selected: rgba(0, 45, 179, 0.16);
   --border: #000000;
+  --border-strong: #000000;
   --border-subtle: rgba(0, 0, 0, 0.45);
   --radius: 4px;
   --radius-sm: 2px;
@@ -41,6 +59,6 @@ html[data-theme-mode="light"] {
 }
 
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 3px solid var(--accent);
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
 }

@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
   COMPATIBILITY_MAP_VERSION,
+  ADA_SELECTOR_TARGETS,
   parseThemeMetadata,
   translateBetterDiscordTheme,
   translateBetterDiscordThemeWithImports
@@ -27,6 +28,24 @@ test("rewrites mapped Discord variables in declarations and var() references", (
   assert.match(result.css, /var\(--bg\)/);
   assert.equal(result.translated.variableCount, 4);
   assert.deepEqual(result.warnings, []);
+});
+
+test("maps semantic color families and reports per-family selector and variable coverage", () => {
+  const result = translateBetterDiscordTheme(`:root { --background-tertiary: #222; --text-feedback-warning: #fc0; --status-danger: #f00; --button-positive-background: #0f0; --text-normal: #eee; } .guilds_2JjMmN .active { color: var(--text-feedback-warning); } .wrapper_ef3116 { color: red; }`, {
+    selectorMap: { ".guilds_2JjMmN": ADA_SELECTOR_TARGETS.find((target) => target.label === "File list").selector }
+  });
+
+  assert.match(result.css, /--surface-raised:\s*#222/);
+  assert.match(result.css, /--warning:\s*#fc0/);
+  assert.match(result.css, /--danger:\s*#f00/);
+  assert.match(result.css, /--success:\s*#0f0/);
+  assert.match(result.css, /--fg:\s*#eee/);
+  assert.match(result.css, /data-ada-component="file-list"/);
+  assert.equal(result.translated.coverage.selectors.mapped, 2);
+  assert.equal(result.translated.coverage.selectors.unmapped, 1);
+  assert.equal(result.translated.coverage.selectors.byTarget["file-list"], 1);
+  assert.equal(result.translated.coverage.variables.byFamily.status, 4);
+  assert.equal(result.translated.coverage.variables.byFamily.text, 1);
 });
 
 test("avoids self-referential aliases and leaves role-specific colors unmapped", () => {
@@ -123,6 +142,26 @@ test("fetches, recursively translates, and rebases CORS-accessible remote import
   assert.match(result.css, /url\(https:\/\/example\.test\/images\/bg\.jpg\)/);
   assert.equal(result.translated.selectorCount, 3);
   assert.ok(requests.every(({ options }) => options.mode === "cors" && options.credentials === "omit"));
+});
+
+test("translates remote imports with layer, supports, and media qualifiers", async () => {
+  const url = "https://example.test/qualified.css";
+  const result = await translateBetterDiscordThemeWithImports(`@import url("${url}") layer(ada-theme) supports(display: grid) screen and (min-width: 20rem);`, {
+    fetch: async (requestUrl) => ({
+      ok: requestUrl === url,
+      status: requestUrl === url ? 200 : 404,
+      url: requestUrl,
+      text: async () => `.appMount__51fd7 { --text-normal: #eee; }`
+    })
+  });
+
+  assert.deepEqual(result.resolvedImports, [url]);
+  assert.deepEqual(result.unresolvedImports, []);
+  assert.match(result.css, /@layer ada-theme/);
+  assert.match(result.css, /@supports \(display: grid\)/);
+  assert.match(result.css, /@media screen and \(min-width: 20rem\)/);
+  assert.match(result.css, /\[data-ada-component="app-shell"\]/);
+  assert.match(result.css, /--fg:\s*#eee/);
 });
 
 test("preserves imports and reports the specific fetch failure when CORS or network access blocks translation", async () => {

@@ -226,13 +226,94 @@
     }
   }
 
+  function renderCoverage(record, card) {
+    const coverage = record.translated?.coverage;
+    if (!coverage) return;
+    const panel = makeElement("div", "ada-theme-coverage");
+    const selectors = coverage.selectors || {};
+    const variables = coverage.variables || {};
+    panel.append(
+      makeElement("p", "", `Selectors: ${selectors.mapped || 0} mapped occurrences · ${selectors.unmapped || 0} unique unmatched`),
+      makeElement("p", "", `Variables: ${variables.mapped || 0} rewrites · ${variables.unmapped || 0} unique unmatched`)
+    );
+    const targetCounts = Object.entries(selectors.byTarget || {});
+    if (targetCounts.length) {
+      panel.appendChild(makeElement("p", "ada-theme-coverage-detail", `Selector targets: ${targetCounts.map(([name, count]) => `${name} (${count})`).join(" · ")}`));
+    }
+    const familyCounts = Object.entries(variables.byFamily || {});
+    if (familyCounts.length) {
+      panel.appendChild(makeElement("p", "ada-theme-coverage-detail", `Variable families: ${familyCounts.map(([name, count]) => `${name} (${count})`).join(" · ")}`));
+    }
+    card.appendChild(panel);
+  }
+
+  async function saveThemeMapping(record, sourceCss, selectorMap) {
+    const analysis = await compat.translateBetterDiscordThemeWithImports(sourceCss, { selectorMap, from: record.fileName });
+    const translated = record.format === "betterdiscord-css"
+      ? analysis
+      : { ...analysis, css: analysis.resolvedCss || sourceCss, warnings: importOnlyWarnings(analysis.warnings), translated: { selectorCount: 0, variableCount: 0 } };
+    record.originalCss = sourceCss;
+    record.compiledCss = translated.css;
+    record.selectorMap = selectorMap;
+    record.warnings = translated.warnings;
+    record.imports = translated.imports;
+    record.resolvedImports = translated.resolvedImports || [];
+    record.unresolvedImports = translated.unresolvedImports || [];
+    record.metadata = translated.metadata;
+    record.translated = translated.translated;
+    record.mapVersion = translated.mapVersion;
+    record.name = translated.metadata.name || record.name;
+    await storeRequest("readwrite", record);
+    installedThemes = await storeRequest("readonly");
+    await applyThemeSheets();
+    renderInstalledThemes();
+  }
+
   function renderWarnings(record, card) {
     const warnings = Array.isArray(record.warnings) ? record.warnings : [];
     if (!warnings.length) return;
     const details = makeElement("details", "ada-theme-warnings");
     details.appendChild(makeElement("summary", "", `Compatibility report · ${warnings.length} warning${warnings.length === 1 ? "" : "s"}`));
     const list = makeElement("ul");
-    for (const warning of warnings) list.appendChild(makeElement("li", "", warning));
+    for (const warning of warnings) {
+      const item = makeElement("li", "", warning);
+      const match = warning.match(/^Unmapped Discord selector component: ([.#][A-Za-z0-9_-]+)$/);
+      if (match && record.format === "betterdiscord-css") {
+        const source = match[1];
+        const mapping = makeElement("div", "ada-theme-quick-map");
+        const select = document.createElement("select");
+        select.setAttribute("aria-label", `Map ${source} to an Ada component`);
+        const placeholder = makeElement("option", "", "Choose Ada component");
+        placeholder.value = "";
+        select.appendChild(placeholder);
+        for (const target of compat.ADA_SELECTOR_TARGETS || []) {
+          const option = makeElement("option", "", target.label);
+          option.value = target.selector;
+          if (record.selectorMap?.[source] === target.selector) option.selected = true;
+          select.appendChild(option);
+        }
+        const apply = makeElement("button", "ada-theme-action ada-theme-action--secondary", "Map");
+        apply.type = "button";
+        apply.disabled = !select.value;
+        select.addEventListener("change", () => { apply.disabled = !select.value; });
+        apply.addEventListener("click", async () => {
+          if (!select.value) return;
+          apply.disabled = true;
+          apply.textContent = "Saving…";
+          try {
+            await saveThemeMapping(record, record.originalCss || "", { ...record.selectorMap, [source]: select.value });
+            showStatus(`Mapped ${source} to ${select.options[select.selectedIndex].text}.`);
+          } catch (error) {
+            showStatus(`Could not map ${source}: ${error.message}`, true);
+            apply.disabled = false;
+            apply.textContent = "Map";
+          }
+        });
+        mapping.append(select, apply);
+        item.appendChild(mapping);
+      }
+      list.appendChild(item);
+    }
     details.appendChild(list);
     card.appendChild(details);
   }
@@ -300,6 +381,7 @@
         const unresolvedCount = Array.isArray(record.unresolvedImports) ? record.unresolvedImports.length : Math.max(0, importedCount - resolvedCount);
         const summary = makeElement("p", "ada-theme-translation-summary", `${record.translated.selectorCount || 0} selector rewrites · ${record.translated.variableCount || 0} variable rewrites · ${resolvedCount}/${importedCount} remote imports translated · ${unresolvedCount} unresolved · map ${record.mapVersion || "unknown"}`);
         card.appendChild(summary);
+        renderCoverage(record, card);
       }
       renderWarnings(record, card);
 
@@ -451,25 +533,7 @@
     }
 
     try {
-      const analysis = await compat.translateBetterDiscordThemeWithImports(sourceCss, { selectorMap, from: record.fileName });
-      const translated = record.format === "betterdiscord-css"
-        ? analysis
-        : { ...analysis, css: analysis.resolvedCss || sourceCss, warnings: importOnlyWarnings(analysis.warnings), translated: { selectorCount: 0, variableCount: 0 } };
-      record.originalCss = sourceCss;
-      record.compiledCss = translated.css;
-      record.selectorMap = selectorMap;
-      record.warnings = translated.warnings;
-      record.imports = translated.imports;
-      record.resolvedImports = translated.resolvedImports || [];
-      record.unresolvedImports = translated.unresolvedImports || [];
-      record.metadata = translated.metadata;
-      record.translated = translated.translated;
-      record.mapVersion = translated.mapVersion;
-      record.name = translated.metadata.name || record.name;
-      await storeRequest("readwrite", record);
-      installedThemes = await storeRequest("readonly");
-      await applyThemeSheets();
-      renderInstalledThemes();
+      await saveThemeMapping(record, sourceCss, selectorMap);
       closeThemeEditor();
       showStatus("Theme saved and translated.");
     } catch (error) {
@@ -536,7 +600,7 @@
     renderAll();
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  function initializeThemeRuntime() {
     const storedMode = readPreference(MODE_KEY, "system");
     modePreference = ["system", "light", "dark"].includes(storedMode) ? storedMode : "system";
     announceThemeChange();
@@ -545,7 +609,13 @@
 
     document.querySelectorAll("[data-ada-theme-mode]").forEach((button) => {
       button.addEventListener("click", () => setMode(button.dataset.adaThemeMode));
-    });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initializeThemeRuntime, { once: true });
+    } else {
+      initializeThemeRuntime();
+    }
     document.getElementById("adaThemeFileInput")?.addEventListener("change", async (event) => {
       const file = event.target.files && event.target.files[0];
       try { await importThemeFile(file); }
@@ -563,7 +633,7 @@
       const dashboardOpen = overlay?.classList.contains("active");
       if (event.key === "Escape" && dashboardOpen) closeThemeDashboard();
       if (event.key === "Tab" && dashboardOpen) {
-        const focusable = [...overlay.querySelectorAll('button:not(:disabled), a[href], input:not(:disabled), textarea:not(:disabled)')]
+        const focusable = [...overlay.querySelectorAll('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled)')]
           .filter((element) => element.getClientRects().length > 0);
         const first = focusable[0];
         const last = focusable[focusable.length - 1];

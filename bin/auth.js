@@ -1,7 +1,7 @@
 // ===== MODERN EMAIL + PASSWORD AUTH SYSTEM =====
 
 // Initialize reCAPTCHA and auth system on page load
-document.addEventListener('DOMContentLoaded', function() {
+function initializeAuth() {
   const siteKey = document.querySelector('meta[name="recaptcha-sitekey"]')?.content;
   if (siteKey) {
     window.ModernAuthInstance.setRecaptchaKey(siteKey);
@@ -10,7 +10,13 @@ document.addEventListener('DOMContentLoaded', function() {
   // Check if user is logged in on page load
   updateModernAuthUI();
   restoreModernSession();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeAuth, { once: true });
+} else {
+  initializeAuth();
+}
 
 // ===== CONFIG LOADER =====
 // Placeholder for future config needs (currently unused with email-based auth)
