@@ -1,16 +1,14 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const originalResendApiKey = process.env.RESEND_API_KEY;
-process.env.RESEND_API_KEY ||= "re_test";
-const routes = {
-  auth: require("../api/auth.js"),
-  blob: require("../api/blob.js"),
-  config: require("../api/config.js"),
-  desmos: require("../api/desmos.js"),
-  gh: require("../api/gh.js"),
-  raw: require("../api/raw.js"),
-  ssh: require("../api/ssh.js")
+const routePaths = {
+  auth: "../api/auth.js",
+  blob: "../api/blob.js",
+  config: "../api/config.js",
+  desmos: "../api/desmos.js",
+  gh: "../api/gh.js",
+  raw: "../api/raw.js",
+  ssh: "../api/ssh.js"
 };
 
 function createResponse() {
@@ -38,6 +36,15 @@ function createResponse() {
 }
 
 test("root Vercel function adapters delegate to the shared API handlers", async () => {
+  const originalResendApiKey = process.env.RESEND_API_KEY;
+  process.env.RESEND_API_KEY ||= "re_test";
+  const routes = Object.fromEntries(
+    await Promise.all(Object.entries(routePaths).map(async ([name, path]) => [
+      name,
+      (await import(path)).default
+    ]))
+  );
+
   for (const [name, handler] of Object.entries(routes)) {
     assert.equal(typeof handler, "function", `${name} adapter should export a handler`);
   }
@@ -51,14 +58,12 @@ test("root Vercel function adapters delegate to the shared API handlers", async 
     ["ssh", { method: "GET", query: {} }, 405]
   ];
 
-  try {
-    for (const [name, req, expectedStatus] of cases) {
-      const res = createResponse();
-      await routes[name](req, res);
-      assert.equal(res.statusCode, expectedStatus, `${name} adapter should invoke its handler`);
-    }
-  } finally {
-    if (originalResendApiKey === undefined) delete process.env.RESEND_API_KEY;
-    else process.env.RESEND_API_KEY = originalResendApiKey;
+  for (const [name, req, expectedStatus] of cases) {
+    const res = createResponse();
+    await routes[name](req, res);
+    assert.equal(res.statusCode, expectedStatus, `${name} adapter should invoke its handler`);
   }
+
+  if (originalResendApiKey === undefined) delete process.env.RESEND_API_KEY;
+  else process.env.RESEND_API_KEY = originalResendApiKey;
 });
